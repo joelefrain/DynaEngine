@@ -1,0 +1,17 @@
+{
+    "bylayer": "-",
+    "byblock": "-",
+    "continuous": "-",
+    "solid": "-",
+    "dashed": "--",
+    "hidden": "--",
+    "center": "--",
+    "phantom": "--",
+    "border": "--",
+    "dotted": ":",
+    "dot": ":",
+    "dashdot": "-.",
+    "center2": "-.",
+    "dashdot2": "-.",
+    "chain": "-."
+}
