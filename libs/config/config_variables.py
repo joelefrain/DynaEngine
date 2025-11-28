@@ -31,3 +31,9 @@ BASE_DIR = Path(__file__).parent.parent.parent
 LOG_DIR = BASE_DIR / "logs"
 STORAGE_DIR = BASE_DIR / "var"
 ENV_FILE_PATH = BASE_DIR / "config" / ".env"
+
+# Rutas a archivos de base de datos
+# ---------------------------------------------------------------
+SCHEMA_SQL_PATH = BASE_DIR / "data" / "database" / "schema.sql"
+DATABASE_PATH = BASE_DIR / "data" / "database" / "prismo.db"
+ACCEL_RECORD_STORE = BASE_DIR / "data" / "accel_records"
