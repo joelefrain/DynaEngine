@@ -33,6 +33,7 @@ BASE_DIR = Path(__file__).parent.parent.parent
 
 LOG_DIR = BASE_DIR / "logs"
 STORAGE_DIR = BASE_DIR / "var"
+TEMP_DATA_DIR = STORAGE_DIR / "temp"
 ENV_FILE_PATH = BASE_DIR / "config" / ".env"
 
 # Rutas a archivos de base de datos

@@ -24,7 +24,7 @@ from modules.seismo_response.class_simulation import (
 )
 
 BOUNDARY_TYPE = {"0": "elastic", "1": "rigid"}
-SIMULATION_TYPE = {"0": "Lineal", "1": "Lineal_equivalente", "2": "No_lineal"}
+SIMULATION_TYPE = {"0": "linear", "1": "linear_equivalent", "2": "no_linear"}
 ACCEL_FNAME = "input_accel.txt"
 VS_PROFILE_FNAME = "vs_profile.txt"
 DINAMIC_CURVES_FNAME = "dynamic_curves.txt"

@@ -25,6 +25,7 @@ from modules.seismo_response.class_parameters import (
 from modules.seismo_response.class_simulation_results import Simulation_Results
 from modules.seismo_response.class_Vs_profile import Vs_Profile
 
+from libs.config.config_variables import TEMP_DATA_DIR
 
 class Simulation:
     """
@@ -572,7 +573,7 @@ class Nonlinear_Simulation(Simulation):
 
         if sim_dir is None:
             current_time = hlp.get_current_time(for_filename=True)
-            sim_dir = './nonlinear_sim_%s' % current_time
+            sim_dir = TEMP_DATA_DIR / f"nonlinear_sim_{current_time}"
 
         if os.path.exists(sim_dir):
             sim_dir += '_'
