@@ -46,6 +46,9 @@ from modules.seismo_response import helper_hh_model as hh
 from modules.seismo_response import helper_mkz_model as mkz
 from modules.seismo_response import helper_site_response as sr
 
+from libs.config.config_logger import get_logger
+
+logger = get_logger()
 
 def hh_param_from_profile(
         vs_profile: np.ndarray,
@@ -407,16 +410,15 @@ def produce_HH_G_param(
     K0 = hlp.check_length_or_extend_to_array(K0, n_layer, name='`K0`')
     p0 = _calc_mean_confining_stress(sigma_v0, K0)
 
-    if verbose:
-        print('========== Start optimizing for HH_G parameters ===========')
+    # if verbose:
+    #     print('========== Start optimizing for HH_G parameters ===========')
     # END
 
     # ============= MKZ fit ===================================================
     if curves is None:  # user does not provide curves
         if verbose:
-            print(
-                '------ G/Gmax not provided; will generate MKZ curves using '
-                'Darendeli (2001): ------',
+            logger.info(
+                "No se tienen curvas dinámicas, se generaran utilizando Darendeli (2001)",
             )
         # END
 
@@ -490,8 +492,8 @@ def produce_HH_G_param(
     # END FOR
 
     # ========== Start FKZ optimization =======================================
-    if verbose:
-        print('-----------  FKZ optimization  -----------------------------')
+    # if verbose:
+    #     print('-----------  FKZ optimization  -----------------------------')
 
     parameters = np.zeros((9, n_layer))
 

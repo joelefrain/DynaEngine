@@ -43,7 +43,7 @@ class InputData:
         self.vs_path = self.raw_data_dir / VS_PROFILE_FNAME
         self.curves_path = self.raw_data_dir / DINAMIC_CURVES_FNAME
 
-    # Validación si la ruta del archivo existe
+
     def _check_file_exists(self, path):
         if not path.exists():
             raise FileNotFoundError(f"Los archivos ingresados no existen:\n{path}")
@@ -71,6 +71,7 @@ class InputData:
         return Vs_Profile(data=str(self.vs_path)), amount_vs_rows
 
     def input_dynamic_curves(self, amount_vs_rows: int):
+       # generar validación
         logger.info("Inicio de prueba de curvas dinámicas")
 
         InputValidator.validate_dynamic_curves(self.curves_path, amount_vs_rows)
@@ -88,7 +89,6 @@ class InputValidator:
                 f"El archivo '{path.name}' no tiene formato numérico válido"
             )
 
-    # Reivsar
     @staticmethod
     def _validate_2d(data: np.ndarray):
         if data.ndim != 2:
@@ -123,6 +123,12 @@ class InputValidator:
             raise ValueError("La última fila debe tener 0 en la quinta columna")
 
     @staticmethod
+    def validate_boundary_conditions(boundary_case):
+        if len(boundary_case) > 1:
+            logger.warning("Solo se permite una condición de borde")
+            return
+
+    @staticmethod
     def validate_ground_motion(path: Path) -> None:
         data = InputValidator.load_file(path)
 
@@ -152,7 +158,6 @@ class InputValidator:
         expected_cols = 4 * (vs_rows - 1)
         InputValidator._validate_columns(data, expected=expected_cols)
 
-
 class SimulationExecuter:
     @staticmethod
     def execute_simulation(
@@ -168,6 +173,8 @@ class SimulationExecuter:
                 return Linear_Simulation(vs_profile, ground_motion, boundary=boundary)
 
             case "1":
+                if dynamic_curves is None:
+                    logger.warning("Es necesario colocar curvas dinámicas")
                 return Equiv_Linear_Simulation(
                     vs_profile, ground_motion, dynamic_curves, boundary=boundary
                 )
@@ -233,7 +240,9 @@ def execute_response_analysis(
     vs_profile, vs_rows = input_data.input_vs_profile()
 
     dynamic_curves = input_data.input_dynamic_curves(vs_rows)
+    
     for bound_case in boundary_case:
+        InputValidator.validate_boundary_conditions(boundary_case) # IMPORTANTE
         for sim_case in simulation_case:
             simulation = SimulationExecuter.execute_simulation(
                 sim_case,
@@ -258,9 +267,11 @@ def main():
     session_name = f"{base_session}_{short_id}"
 
     simulation = ["2"]  # 0: Lineal, 1: Lineal equivalente y 2: No lineal.
-    boundary = ["1"]  # 0: Elastico y 1: Rigido.
+    boundary = ["1", "0"]  # 0: Elastico y 1: Rigido.
     execute_response_analysis(base_session, session_name, simulation, boundary)
 
 
 if __name__ == "__main__":
     main()
+
+# En caso de tener un archivo lineal no se necesita verificacion de curvas dinámicas.
