@@ -8,7 +8,7 @@ import numpy as np
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../")))
 
-from libs.config.config_variables import STORAGE_DIR
+from libs.config.config_variables import STORAGE_DIR, UNIT_GROUND_MOTION
 from libs.config.config_logger import get_logger, log_execution_time
 
 from modules.seismo_response.class_hh_calibration import HH_Calibration
@@ -54,14 +54,14 @@ class InputData:
         self._check_file_exists(self.curves_path)
 
     def input_ground_motion(self):
-        logger.info("Inicio de prueba de sismos")
+        logger.info("Inicio de lectura de sismos") #
 
         InputValidator.validate_ground_motion(self.seismic_path)
 
-        return Ground_Motion(data=str(self.seismic_path), unit="g")
+        return Ground_Motion(data=str(self.seismic_path), unit=UNIT_GROUND_MOTION)
 
     def input_vs_profile(self):
-        logger.info("Inicio de prueba de perfil de velocidades")
+        logger.info("Inicio lectura de perfil de velocidades")
 
         data = InputValidator.load_file(self.vs_path)
         InputValidator.validate_vs_profile(data)
@@ -71,8 +71,7 @@ class InputData:
         return Vs_Profile(data=str(self.vs_path)), amount_vs_rows
 
     def input_dynamic_curves(self, amount_vs_rows: int):
-       # generar validación
-        logger.info("Inicio de prueba de curvas dinámicas")
+        logger.info("Inicio de lectura de curvas dinámicas")
 
         InputValidator.validate_dynamic_curves(self.curves_path, amount_vs_rows)
 
@@ -86,7 +85,7 @@ class InputValidator:
             return np.loadtxt(path)
         except ValueError:
             raise ValueError(
-                f"El archivo '{path.name}' no tiene formato numérico válido"
+                f"El archivo '{path}' no tiene formato numérico válido"
             )
 
     @staticmethod
@@ -181,7 +180,6 @@ class SimulationExecuter:
                 )
 
             case "2":
-                # Calibración
                 hh_c = HH_Calibration(vs_profile)
                 hh_g_param = hh_c.fit()
 
@@ -219,7 +217,7 @@ class ResultManager:
         """
         self.simulation_output_path.mkdir(parents=True, exist_ok=True)
 
-        #logger.info(f"Estructura de salida creada:\n {self.simulation_output_path}")
+        logger.info(f"Estructura de salida creada:\n {self.simulation_output_path}")
 
     def save_results(self, response):
         self.create_simulation_files()
@@ -241,25 +239,24 @@ def execute_response_analysis(
     vs_profile, vs_rows = input_data.input_vs_profile()
 
     dynamic_curves = input_data.input_dynamic_curves(vs_rows)
-    
-    for bound_case in boundary_case:
-        InputValidator.validate_boundary_conditions(boundary_case) # IMPORTANTE
-        for sim_case in simulation_case:
-            simulation = SimulationExecuter.execute_simulation(
-                sim_case,
-                vs_profile,
-                ground_motion,
-                dynamic_curves,
-                BOUNDARY_TYPE[bound_case],
-            )
-            response = simulation.run()
+      
+    InputValidator.validate_boundary_conditions(boundary_case)
+    for sim_case in simulation_case:
+        simulation = SimulationExecuter.execute_simulation(
+            sim_case,
+            vs_profile,
+            ground_motion,
+            dynamic_curves,
+            BOUNDARY_TYPE[boundary_case],
+        )
+        response = simulation.run()
 
-            result_manager = ResultManager(
-                session_name,
-                sim_case,
-                bound_case,
-            )
-            result_manager.save_results(response)
+        result_manager = ResultManager(
+            session_name,
+            sim_case,
+            boundary_case,
+        )
+        result_manager.save_results(response)
 
 def main():
     base_session = "sesion_20260223_103200_ew"
@@ -268,11 +265,9 @@ def main():
     session_name = f"{base_session}_{short_id}"
 
     simulation = ["1", "2"]  # 0: Lineal, 1: Lineal equivalente y 2: No lineal.
-    boundary = ["0"]  # 0: Elastico y 1: Rigido.
+    boundary = "0"  # 0: Elastico y 1: Rigido.
     execute_response_analysis(base_session, session_name, simulation, boundary)
 
 
 if __name__ == "__main__":
     main()
-
-# En caso de tener un archivo lineal no se necesita verificacion de curvas dinámicas.
