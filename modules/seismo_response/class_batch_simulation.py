@@ -182,8 +182,8 @@ class Batch_Simulation:
                         itertools.product(range(N), [other_params]),
                     )
 
-            if verbose:
-                print('done.')
+            # if verbose:
+            #     print('done.')
 
             # Because no figures can be plotted in the parallel pool:
             if options.get('show_fig', False):

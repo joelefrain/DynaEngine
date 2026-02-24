@@ -417,7 +417,7 @@ def produce_HH_G_param(
     # ============= MKZ fit ===================================================
     if curves is None:  # user does not provide curves
         if verbose:
-            logger.info(
+            logger.warning(
                 "No se tienen curvas dinámicas, se generaran utilizando Darendeli (2001)",
             )
         # END
@@ -513,11 +513,11 @@ def produce_HH_G_param(
             Tmax[j],
             mu[j],
         )
-        if verbose:
-            print(
-                f'{j + 1}/{n_layer}: mu = {mu[j]:.3f}, a = {a:.1f}, '
-                f'gamma_t = {gamma_t * 100:.3f}%, d = {d:.3f}',
-            )
+        # if verbose:
+        #     logger.info(
+        #         f'{j + 1}/{n_layer}: mu = {mu[j]:.3f}, a = {a:.1f}, '
+        #         f'gamma_t = {gamma_t * 100:.3f}%, d = {d:.3f}',
+        #     )
 
         T_FKZ = hh.tau_FKZ(
             strain_j / 100.0,

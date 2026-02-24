@@ -125,8 +125,8 @@ class InputValidator:
     @staticmethod
     def validate_boundary_conditions(boundary_case):
         if len(boundary_case) > 1:
-            logger.warning("Solo se permite una condición de borde")
-            return
+            logger.warning("Modificar, se permite una condición de borde")
+            raise ValueError("No se puede continuar")
 
     @staticmethod
     def validate_ground_motion(path: Path) -> None:
@@ -175,6 +175,7 @@ class SimulationExecuter:
             case "1":
                 if dynamic_curves is None:
                     logger.warning("Es necesario colocar curvas dinámicas")
+                    raise ValueError("No se puede continuar")
                 return Equiv_Linear_Simulation(
                     vs_profile, ground_motion, dynamic_curves, boundary=boundary
                 )
@@ -218,7 +219,7 @@ class ResultManager:
         """
         self.simulation_output_path.mkdir(parents=True, exist_ok=True)
 
-        logger.info(f"Estructura de salida creada:\n {self.simulation_output_path}")
+        #logger.info(f"Estructura de salida creada:\n {self.simulation_output_path}")
 
     def save_results(self, response):
         self.create_simulation_files()
@@ -266,8 +267,8 @@ def main():
     short_id = uuid.uuid4().hex[:4]
     session_name = f"{base_session}_{short_id}"
 
-    simulation = ["2"]  # 0: Lineal, 1: Lineal equivalente y 2: No lineal.
-    boundary = ["1", "0"]  # 0: Elastico y 1: Rigido.
+    simulation = ["1", "2"]  # 0: Lineal, 1: Lineal equivalente y 2: No lineal.
+    boundary = ["0"]  # 0: Elastico y 1: Rigido.
     execute_response_analysis(base_session, session_name, simulation, boundary)
 
 

@@ -13,7 +13,9 @@ from modules.seismo_response.class_parameters import (
     MKZ_Param_Multi_Layer,
 )
 from modules.seismo_response.class_Vs_profile import Vs_Profile
+from libs.config.config_logger import get_logger
 
+logger = get_logger()
 
 def check_layer_count(
         vs_profile: Vs_Profile,
@@ -361,8 +363,8 @@ def equiv_linear(
     D_matrix[:, 0] = D[:-1]
 
     for i_iter in range(max_iter):
-        if verbose:
-            print('Iteration No.%d.' % (i_iter + 1), end='')
+        # if verbose:
+        #     print('Iteration No.%d.' % (i_iter + 1), end='')
 
         H, accel_out, veloc, displ, strain, eff_strain = _lin_resp_every_layer(
             dt=dt,
@@ -406,14 +408,14 @@ def equiv_linear(
         D[:-1] = D_new
         G_matrix[:, i_iter + 1] = G_new
         D_matrix[:, i_iter + 1] = D_new
-        if verbose:
-            print(
-                '  G_diff = %7.2f%%, D_diff = %7.2f%%'
-                % (
-                    np.max(G_relative_diff) * 100,
-                    np.max(D_relative_diff) * 100,
-                ),
-            )
+        # if verbose:
+        #     print(
+        #         '  G_diff = %7.2f%%, D_diff = %7.2f%%'
+        #         % (
+        #             np.max(G_relative_diff) * 100,
+        #             np.max(D_relative_diff) * 100,
+        #         ),
+        #     )
 
         # --------- Check convergence ------------------------------------------
         if (
@@ -421,7 +423,7 @@ def equiv_linear(
             and np.max(D_relative_diff) < tol
             and verbose
         ):
-            print('---------- Convergence achieved ---------------')
+            logger.info('---------- Convergencia alcanzada ---------------')
             break
         # END IF
     # END FOR
