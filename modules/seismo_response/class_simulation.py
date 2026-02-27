@@ -20,6 +20,7 @@ from modules.seismo_response.class_ground_motion import Ground_Motion
 from modules.seismo_response.class_parameters import (
     HH_Param_Multi_Layer,
     MKZ_Param_Multi_Layer,
+    GQH_Param_Multi_Layer,
     Param_Multi_Layer,
 )
 from modules.seismo_response.class_simulation_results import Simulation_Results
@@ -49,9 +50,9 @@ class Simulation:
         Boundary condition. "Elastic" means that the boundary allows waves to
         propagate through. "Rigid" means that all downgoing waves are reflected
         back to the soil medium.
-    G_param : HH_Param_Multi_Layer | MKZ_Param_Multi_Layer | None
+    G_param : HH_Param_Multi_Layer | MKZ_Param_Multi_Layer | GQH_Param_Multi_Layer | None
         Parameters that describe the G/Gmax curves.
-    xi_param : HH_Param_Multi_Layer | MKZ_Param_Multi_Layer | None
+    xi_param : HH_Param_Multi_Layer | MKZ_Param_Multi_Layer | GQH_Param_Multi_Layer | None
         Parameters that describe the damping curves.
     GGmax_and_damping_curves : Multiple_GGmax_Damping_Curves | None
         G/Gmax and damping curves of every soil layer.
@@ -64,9 +65,9 @@ class Simulation:
         Same as the input parameter ``input_motion``.
     boundary : Literal['elastic', 'rigid']
         Same as the input parameter ``boundary``.
-    G_param : HH_Param_Multi_Layer | MKZ_Param_Multi_Layer | None
+    G_param : HH_Param_Multi_Layer | MKZ_Param_Multi_Layer | GQH_Param_Multi_Layer | None
         Same as the input parameter ``G_param``.
-    xi_param : HH_Param_Multi_Layer | MKZ_Param_Multi_Layer | None
+    xi_param : HH_Param_Multi_Layer | MKZ_Param_Multi_Layer | GQH_Param_Multi_Layer | None
         Same as the input parameter ``xi_param``.
     GGmax_and_damping_curves : Multiple_GGmax_Damping_Curves | None
         Same as the input parameter ``GGmax_and_damping_curves``.
@@ -82,8 +83,8 @@ class Simulation:
     soil_profile: Vs_Profile
     input_motion: Ground_Motion
     boundary: Literal["elastic", "rigid"]
-    G_param: HH_Param_Multi_Layer | MKZ_Param_Multi_Layer | None
-    xi_param: HH_Param_Multi_Layer | MKZ_Param_Multi_Layer | None
+    G_param: HH_Param_Multi_Layer | MKZ_Param_Multi_Layer | GQH_Param_Multi_Layer | None
+    xi_param: HH_Param_Multi_Layer | MKZ_Param_Multi_Layer | GQH_Param_Multi_Layer | None
     GGmax_and_damping_curves: Multiple_GGmax_Damping_Curves | None
 
     # fmt: off
@@ -93,8 +94,8 @@ class Simulation:
             input_motion: Ground_Motion,
             *,
             boundary: Literal['elastic', 'rigid'] = 'elastic',
-            G_param: HH_Param_Multi_Layer | MKZ_Param_Multi_Layer | None = None,
-            xi_param: HH_Param_Multi_Layer | MKZ_Param_Multi_Layer | None = None,  # noqa: LN001
+            G_param: HH_Param_Multi_Layer | MKZ_Param_Multi_Layer | GQH_Param_Multi_Layer | None = None,
+            xi_param: HH_Param_Multi_Layer | MKZ_Param_Multi_Layer | GQH_Param_Multi_Layer | None = None,  # noqa: LN001
             GGmax_and_damping_curves: Multiple_GGmax_Damping_Curves | None = None,  # noqa: LN001
     ) -> None:
     # fmt: on  # noqa: E115
@@ -449,9 +450,9 @@ class Nonlinear_Simulation(Simulation):
         ``boundary`` is set to ``"elastic"``, and it should be the recorded
         motion at the bottom of the Vs profile (i.e., the "borehole" motion)
         if ``boundary`` is set to ``"rigid"``.
-    G_param : HH_Param_Multi_Layer | MKZ_Param_Multi_Layer | None
+    G_param : HH_Param_Multi_Layer | MKZ_Param_Multi_Layer | GQH_Param_Multi_Layer |None
         Parameters that describe the G/Gmax curves.
-    xi_param : HH_Param_Multi_Layer | MKZ_Param_Multi_Layer | None
+    xi_param : HH_Param_Multi_Layer | MKZ_Param_Multi_Layer | GQH_Param_Multi_Layer | None
         Parameters that describe the damping curves.
     boundary : Literal['elastic', 'rigid']
         Boundary condition. "Elastic" means that the boundary allows waves to
@@ -464,9 +465,9 @@ class Nonlinear_Simulation(Simulation):
         Same as the input parameter ``soil_profile``.
     input_motion : Ground_Motion
         Same as the input parameter ``input_motion``.
-    G_param : HH_Param_Multi_Layer | MKZ_Param_Multi_Layer | None
+    G_param : HH_Param_Multi_Layer | MKZ_Param_Multi_Layer | GQH_Param_Multi_Layer | None
         Same as the input parameter ``G_param``.
-    xi_param : HH_Param_Multi_Layer | MKZ_Param_Multi_Layer | None
+    xi_param : HH_Param_Multi_Layer | MKZ_Param_Multi_Layer | GQH_Param_Multi_Layer | None
         Same as the input parameter ``xi_param``.
     boundary : Literal['elastic', 'rigid']
         Same as the input parameter ``boundary``.
@@ -479,8 +480,8 @@ class Nonlinear_Simulation(Simulation):
 
     soil_profile: Vs_Profile
     input_motion: Ground_Motion
-    G_param: HH_Param_Multi_Layer | MKZ_Param_Multi_Layer | None
-    xi_param: HH_Param_Multi_Layer | MKZ_Param_Multi_Layer | None
+    G_param: HH_Param_Multi_Layer | MKZ_Param_Multi_Layer | GQH_Param_Multi_Layer | None
+    xi_param: HH_Param_Multi_Layer | MKZ_Param_Multi_Layer | GQH_Param_Multi_Layer | None
     boundary: Literal["elastic", "rigid"]
 
     def __init__(
@@ -488,8 +489,8 @@ class Nonlinear_Simulation(Simulation):
         soil_profile: Vs_Profile,
         input_motion: Ground_Motion,
         *,
-        G_param: HH_Param_Multi_Layer | MKZ_Param_Multi_Layer | None,
-        xi_param: HH_Param_Multi_Layer | MKZ_Param_Multi_Layer | None,
+        G_param: HH_Param_Multi_Layer | MKZ_Param_Multi_Layer | GQH_Param_Multi_Layer | None,
+        xi_param: HH_Param_Multi_Layer | MKZ_Param_Multi_Layer | GQH_Param_Multi_Layer | None,
         boundary: Literal["elastic", "rigid"] = "elastic",
     ) -> None:
         if G_param is None:

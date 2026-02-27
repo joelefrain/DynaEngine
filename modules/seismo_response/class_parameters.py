@@ -12,6 +12,7 @@ from matplotlib.figure import Figure
 from modules.seismo_response import helper_generic as hlp
 from modules.seismo_response import helper_hh_model as hh
 from modules.seismo_response import helper_mkz_model as mkz
+from modules.seismo_response import helper_gqh_model as gqh
 from modules.seismo_response import helper_site_response as sr
 
 if TYPE_CHECKING:  # to avoid circular imports
@@ -336,6 +337,44 @@ class MKZ_Param(Parameter):
         {'gamma_ref', 's', 'beta', 'Gmax'}
         """
         return mkz.serialize_params_to_array(self.data)
+
+
+class GQH_Param(Parameter):
+    """
+    Class implementation of the GQH model parameters. After initialization, you
+    can access/modify individual parameter values just like a dictionary.
+
+    Parameters
+    ----------
+    param_dict : dict[str, float]
+        Values of the GQH model parameters. Acceptable key names are:
+            gamma_ref, theta_1, theta_2, theta_3, theta_4, theta_5, Gmax
+
+    Attributes
+    ----------
+    data : dict[str, float]
+        GQH model parameters with the keys listed above.
+    allowable_keys : set[str]
+        Valid parameter names of the GQH model.
+    """
+
+    data: dict[str, float]
+    allowable_keys: set[str]
+
+    def __init__(self, param_dict: dict[str, float]) -> None:
+        allowable_keys = {'gamma_ref', 'theta_1', 'theta_2', 'theta_3', 'theta_4', 'theta_5', 'Gmax'}
+        super().__init__(
+            param_dict,
+            func_stress=gqh.tau_GQH,
+            allowable_keys=allowable_keys,
+        )
+
+    def serialize(self) -> np.ndarray:
+        """
+        Return an array of parameter values in the order of:
+        {'gamma_ref', 'theta_1', 'theta_2', 'theta_3', 'theta_4', 'theta_5', 'Gmax'}
+        """
+        return gqh.serialize_params_to_array(self.data)
 
 
 class Param_Multi_Layer:
@@ -715,4 +754,97 @@ class MKZ_Param_Multi_Layer(Param_Multi_Layer):
         super().__init__(
             list_of_param,
             element_class=MKZ_Param,
+        )
+
+
+class GQH_Param_Multi_Layer(Param_Multi_Layer):
+    """
+    Class implementation of multiple sets of GQH parameters for multiple layers.
+
+    Its behavior is similar to a list,
+    but with a more stringent requirement: all elements are of the same data
+    type, i.e., GQH_Param.
+
+    The list-like behaviors available are:
+        - indexing: foo[3]
+        - slicing: foo[:4]
+        - setting values: foo[2] = ...
+        - length: len(foo)
+        - deleting item: del foo[2]
+        - checking existance: bar in foo
+
+    Parameters
+    ----------
+    filename_or_data : str | np.ndarray | list[dict[str, float]] | list[GQH_Param]
+        A file name of a validly formatted "parameter file", i.e., having the
+        following format:
+            +----------------+-----------------+-----------------+-----+
+            |  param_layer_1 |  param_layer_2  |  param_layer_3  | ... |
+            +================+=================+=================+=====+
+            |      1.1       |      2.2        |      3.3        | ... |
+            +----------------+-----------------+-----------------+-----+
+            |      1.2       |      2.3        |      3.4        | ... |
+            +----------------+-----------------+-----------------+-----+
+            |      ...       |      ...        |      ...        | ... |
+            +----------------+-----------------+-----------------+-----+
+
+        or a 2D numpy array containing the data of the format above, or a
+        list containing GQH parameter data.
+    sep : str
+        Delimiter of the file to be imported. If ``filename_or_data`` is not
+        a file name, ``sep`` has no effect.
+
+    Attributes
+    ----------
+    param_list : list[GQH_Param]
+        A list of GQH model parameters.
+    n_layer : int
+        The number of soil layers (i.e., the length of the list).
+
+    Raises
+    ------
+    TypeError
+        When then type of ``filename_or_data`` is not valid
+    """
+
+    param_list: list[GQH_Param]
+    n_layer: int
+
+    def __init__(
+            self,
+            filename_or_data: str
+            | np.ndarray
+            | list[dict[str, float]]
+            | list[GQH_Param],
+            *,
+            sep: str = '\t',
+    ) -> None:
+        if isinstance(filename_or_data, str):  # file name
+            self._filename = filename_or_data
+            params = np.genfromtxt(filename_or_data, delimiter=sep)
+            list_of_param_array = hlp.extract_from_param_format(params)
+            list_of_param = [
+                gqh.deserialize_array_to_params(_) for _ in list_of_param_array
+            ]
+        elif isinstance(filename_or_data, np.ndarray):
+            hlp.assert_2D_numpy_array(
+                filename_or_data, name='`filename_or_data`'
+            )
+            list_of_param_array = hlp.extract_from_param_format(
+                filename_or_data
+            )
+            list_of_param = [
+                gqh.deserialize_array_to_params(_) for _ in list_of_param_array
+            ]
+        elif isinstance(filename_or_data, list):
+            self._filename = None
+            list_of_param = filename_or_data
+        else:
+            raise TypeError('Unrecognized type for ``filename_or_data``.')
+
+        self._sep = sep
+
+        super().__init__(
+            list_of_param,
+            element_class=GQH_Param,
         )

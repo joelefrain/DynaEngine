@@ -82,7 +82,10 @@ def tau_GQH(
     theta_T = theta_1 + theta_2 * (frac_upper / frac_lower)
 
     sqrt_argument = (1 + gamma/gamma_ref)**2 - 4 * theta_T * (gamma / gamma_ref)
-    T_GQH = 2 * Gmax * gamma / [1 + (gamma / gamma_ref) + sqrt_argument **0.5]
+
+    sqrt_term = np.sqrt(np.maximum(sqrt_argument, 0.0))
+
+    T_GQH = 2 * Gmax * gamma / (1 + (gamma / gamma_ref) + sqrt_term)
 
     return T_GQH
 
@@ -247,7 +250,7 @@ def damping_misfit(
     strain = damping_data[:, 0]
     damping_true = damping_data[:, 1]
 
-    Tau_MKZ = tau_GQH(strain, 
+    Tau_GQH = tau_GQH(strain, 
                       gamma_ref=gamma_ref, 
                       theta_1=theta_1, 
                       theta_2=theta_2, 
@@ -256,7 +259,7 @@ def damping_misfit(
                       theta_5=theta_5, 
                       Gmax=Gmax
                       )
-    damping_pred = sr.calc_damping_from_stress_strain(strain, Tau_MKZ, Gmax)
+    damping_pred = sr.calc_damping_from_stress_strain(strain, Tau_GQH, Gmax)
     error = hlp.mean_absolute_error(damping_true, damping_pred)
 
     return error
@@ -355,7 +358,7 @@ def deserialize_array_to_params(
     return param
 
 
-def fit_MKZ(
+def fit_GQH(
         curve_data: np.ndarray,
         show_fig: bool = False,
         verbose: bool = False,
