@@ -1,6 +1,7 @@
 # Este archivo contiene variables de configuración para la aplicación.
 # ---------------------------------------------------------------
 import os
+import numpy as np
 from pathlib import Path
 
 
@@ -98,4 +99,5 @@ RETURN_PRD_LST = [100, 475, 1000, 2475, 5000, 10000]  # años
 # Constantes
 # ---------------------------------------------------------------
 UNIT_GROUND_MOTION = "g"
-STRAIN_RANGE_PCT = [0.0001, 0.0003, 0.001, 0.003, 0.01, 0.03, 0.1, 0.3, 0.7, 1, 3, 7, 10]
+STRAIN_RANGE_PCT = np.logspace(-6, 1, 100)
+WEIGHTED_FUNCTION = [0.1, 0.9] # Convertir a diccionario para especificar.

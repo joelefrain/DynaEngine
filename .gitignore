@@ -59,6 +59,7 @@ __pycache__/
 *.xlsm
 *.gkn
 *.dxf
+*.dat
 
 # Data files
 *.db
