@@ -7,10 +7,9 @@ import matplotlib.pyplot as plt
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../")))
 
-from dev.dev_calibration_gqh import calculate_calibration
-from dev.class_cost_function import GGmaxCalibrationCost
-from dev.helper_calibration_gqh import GQHModelFormulation
-from dev.helper_transformation_hh import GGmax_HH_model
+from scripts.exec_calibration_gqh import calculate_calibration
+from modules.dynamic_curves.helper_calibration_gqh import GQHModelFormulation
+from modules.dynamic_curves.helper_transformation_hh import GGmax_HH_model
 
 from libs.config.config_variables import (
     STORAGE_DIR,
@@ -59,8 +58,8 @@ def grafica_prueba(
 
     fig.subplots_adjust(bottom=0.28)
 
-    fig.text(0.5, 0.12, gqh_params_text, ha="center", fontsize=9)
-    fig.text(0.5, 0.06, best_params_text, ha="center", fontsize=9)
+    fig.text(0.5, 0.12, gqh_params_text, ha="center", fontsize=8)
+    fig.text(0.5, 0.06, best_params_text, ha="center", fontsize=8)
 
     fig.savefig(CALIBRATION_DIR / f"Calibration_{set_number}_{n_sets}.png")
 
@@ -91,22 +90,19 @@ def run_set(
         "tau_max": tau_max,
     }
 
-    model = GQHModelFormulation(parametros_gqh)
-
-    error_rule = GGmaxCalibrationCost(model=model.model_type)
+    modelo = "0"
 
     start_time = time.time()
 
     best_params = calculate_calibration(
         general_params,
-        error_rule,
-        model,
+        parametros_gqh,
+        modelo,
     )
-
-    gg_ref = general_params["gg_ref"]
-
+    
     elapsed = time.time() - start_time
 
+    gg_ref = general_params["gg_ref"]
     print(
         f"(Set {set_number}) | gamma_ref={gamma_ref:.3e} | GGmax_ref={gg_ref:.3f} | G_max={G_max:.2e} | tau_max={tau_max:.2e}"
     )
@@ -120,6 +116,9 @@ def run_set(
     )
 
     print(f"(Set {set_number}) | Tiempo: {elapsed:.2f} s")
+
+    # Crear modelo para generar curvas
+    model = GQHModelFormulation(parametros_gqh)
 
     GGmax_GQH = model.GGmax_model(gamma_ref)
 

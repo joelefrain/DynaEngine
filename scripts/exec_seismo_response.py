@@ -1,19 +1,16 @@
-import os
-import sys
-import uuid
-
 from pathlib import Path
 
 import numpy as np
-
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../")))
 
 from libs.config.config_variables import STORAGE_DIR, UNIT_GROUND_MOTION
 
 from libs.config.config_logger import get_logger, log_execution_time
 from modules.seismo_response.class_ground_motion import Ground_Motion
 from modules.seismo_response.class_Vs_profile import Vs_Profile
-from modules.seismo_response.class_curves import Multiple_GGmax_Damping_Curves, HH_Param_Multi_Layer
+from modules.seismo_response.class_curves import (
+    Multiple_GGmax_Damping_Curves,
+    HH_Param_Multi_Layer,
+)
 
 from modules.seismo_response.class_simulation import (
     Linear_Simulation,
@@ -43,7 +40,6 @@ class InputData:
         self.curves_path = self.raw_data_dir / DINAMIC_CURVES_FNAME
         self.parameters_hh_path = self.raw_data_dir / PARAMETERS_HH_FNAME
 
-
     def _check_file_exists(self, path):
         if not path.exists():
             raise FileNotFoundError(f"Los archivos ingresados no existen:\n{path}")
@@ -55,7 +51,7 @@ class InputData:
         self._check_file_exists(self.parameters_hh_path)
 
     def input_ground_motion(self):
-        logger.info("Inicio de lectura de sismos") #
+        logger.info("Inicio de lectura de sismos")  #
 
         InputValidator.validate_ground_motion(self.seismic_path)
 
@@ -81,15 +77,14 @@ class InputData:
     def input_parameters_hh(self):
         return str(self.parameters_hh_path)
 
+
 class InputValidator:
     @staticmethod
     def load_file(path: Path) -> np.ndarray:
         try:
             return np.loadtxt(path)
         except ValueError:
-            raise ValueError(
-                f"El archivo '{path}' no tiene formato numérico válido"
-            )
+            raise ValueError(f"El archivo '{path}' no tiene formato numérico válido")
 
     @staticmethod
     def _validate_2d(data: np.ndarray):
@@ -160,6 +155,7 @@ class InputValidator:
         expected_cols = 4 * (vs_rows - 1)
         InputValidator._validate_columns(data, expected=expected_cols)
 
+
 class SimulationExecuter:
     @staticmethod
     def execute_simulation(
@@ -169,7 +165,7 @@ class SimulationExecuter:
         dynamic_curves=None,
         parameters_hh=None,
         boundary="elastic",
-        base_session = None
+        base_session=None,
     ):
 
         match simulation_type:
@@ -221,6 +217,7 @@ class ResultManager:
 
         logger.info("Resultados guardados correctamente.")
 
+
 @log_execution_time
 def execute_response_analysis(
     base_session, session_name, simulation_case, boundary_case
@@ -235,7 +232,7 @@ def execute_response_analysis(
     vs_profile, vs_rows = input_data.input_vs_profile()
     parameters_hh = input_data.input_parameters_hh()
     dynamic_curves = input_data.input_dynamic_curves(vs_rows)
-      
+
     InputValidator.validate_boundary_conditions(boundary_case)
     for sim_case in simulation_case:
         simulation = SimulationExecuter.execute_simulation(
@@ -245,7 +242,7 @@ def execute_response_analysis(
             dynamic_curves,
             parameters_hh,
             BOUNDARY_TYPE[boundary_case],
-            base_session
+            base_session,
         )
         response = simulation.run()
 
@@ -255,17 +252,3 @@ def execute_response_analysis(
             boundary_case,
         )
         result_manager.save_results(response)
-
-def main():
-    base_session = "sesion_20260304_140400_ew"
-
-    short_id = uuid.uuid4().hex[:4]
-    session_name = f"{base_session}_{short_id}"
-
-    simulation = ["1", "2"]  # 0: Lineal, 1: Lineal equivalente y 2: No lineal.
-    boundary = "0"  # 0: Elastico y 1: Rigido.
-    execute_response_analysis(base_session, session_name, simulation, boundary)
-
-
-if __name__ == "__main__":
-    main()
