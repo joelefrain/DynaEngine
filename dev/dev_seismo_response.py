@@ -9,14 +9,12 @@ import numpy as np
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../")))
 
 from libs.config.config_variables import STORAGE_DIR, UNIT_GROUND_MOTION
+
 from libs.config.config_logger import get_logger, log_execution_time
-
-from modules.seismo_response.class_hh_calibration import HH_Calibration
-from modules.seismo_response.class_damping_calibration import Damping_Calibration
-
 from modules.seismo_response.class_ground_motion import Ground_Motion
 from modules.seismo_response.class_Vs_profile import Vs_Profile
-from modules.seismo_response.class_curves import Multiple_GGmax_Damping_Curves
+from modules.seismo_response.class_curves import Multiple_GGmax_Damping_Curves, HH_Param_Multi_Layer
+
 from modules.seismo_response.class_simulation import (
     Linear_Simulation,
     Equiv_Linear_Simulation,
@@ -28,6 +26,7 @@ SIMULATION_TYPE = {"0": "linear", "1": "linear_equivalent", "2": "no_linear"}
 ACCEL_FNAME = "input_accel.txt"
 VS_PROFILE_FNAME = "vs_profile.txt"
 DINAMIC_CURVES_FNAME = "dynamic_curves.txt"
+PARAMETERS_HH_FNAME = "curve_parameters_hh.txt"
 
 logger = get_logger()
 
@@ -42,6 +41,7 @@ class InputData:
         self.seismic_path = self.raw_data_dir / ACCEL_FNAME
         self.vs_path = self.raw_data_dir / VS_PROFILE_FNAME
         self.curves_path = self.raw_data_dir / DINAMIC_CURVES_FNAME
+        self.parameters_hh_path = self.raw_data_dir / PARAMETERS_HH_FNAME
 
 
     def _check_file_exists(self, path):
@@ -52,6 +52,7 @@ class InputData:
         self._check_file_exists(self.seismic_path)
         self._check_file_exists(self.vs_path)
         self._check_file_exists(self.curves_path)
+        self._check_file_exists(self.parameters_hh_path)
 
     def input_ground_motion(self):
         logger.info("Inicio de lectura de sismos") #
@@ -77,6 +78,8 @@ class InputData:
 
         return Multiple_GGmax_Damping_Curves(data=str(self.curves_path))
 
+    def input_parameters_hh(self):
+        return str(self.parameters_hh_path)
 
 class InputValidator:
     @staticmethod
@@ -164,7 +167,9 @@ class SimulationExecuter:
         vs_profile,
         ground_motion,
         dynamic_curves=None,
+        parameters_hh=None,
         boundary="elastic",
+        base_session = None
     ):
 
         match simulation_type:
@@ -180,21 +185,12 @@ class SimulationExecuter:
                 )
 
             case "2":
-                hh_c = HH_Calibration(vs_profile)
-                hh_g_param = hh_c.fit()
-
-                d_c = Damping_Calibration(vs_profile)
-
-                hh_x_param = d_c.get_HH_x_param(
-                    parallel=False,
-                    pop_size=200,
-                    n_gen=100,
-                )
+                hh_g_param = HH_Param_Multi_Layer(parameters_hh, sep="\t")
                 return Nonlinear_Simulation(
                     vs_profile,
                     ground_motion,
                     G_param=hh_g_param,
-                    xi_param=hh_x_param,
+                    xi_param=hh_g_param,
                     boundary=boundary,
                 )
 
@@ -208,7 +204,7 @@ class ResultManager:
             f"{SIMULATION_TYPE[simulation_case]}_{BOUNDARY_TYPE[boundary_case]}"
         )
 
-        self.output_path = STORAGE_DIR / "output_data" / session_name
+        self.output_path = STORAGE_DIR / "output" / session_name
         self.simulation_output_path = self.output_path / result_name
 
     def create_simulation_files(self):
@@ -237,7 +233,7 @@ def execute_response_analysis(
 
     ground_motion = input_data.input_ground_motion()
     vs_profile, vs_rows = input_data.input_vs_profile()
-
+    parameters_hh = input_data.input_parameters_hh()
     dynamic_curves = input_data.input_dynamic_curves(vs_rows)
       
     InputValidator.validate_boundary_conditions(boundary_case)
@@ -247,7 +243,9 @@ def execute_response_analysis(
             vs_profile,
             ground_motion,
             dynamic_curves,
+            parameters_hh,
             BOUNDARY_TYPE[boundary_case],
+            base_session
         )
         response = simulation.run()
 
@@ -259,7 +257,7 @@ def execute_response_analysis(
         result_manager.save_results(response)
 
 def main():
-    base_session = "sesion_20260223_103200_ew"
+    base_session = "sesion_20260304_140400_ew"
 
     short_id = uuid.uuid4().hex[:4]
     session_name = f"{base_session}_{short_id}"

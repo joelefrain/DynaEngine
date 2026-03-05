@@ -99,5 +99,20 @@ RETURN_PRD_LST = [100, 475, 1000, 2475, 5000, 10000]  # años
 # Constantes
 # ---------------------------------------------------------------
 UNIT_GROUND_MOTION = "g"
-STRAIN_RANGE_PCT = np.logspace(-6, 1, 100)
-WEIGHTED_FUNCTION = [0.1, 0.9] # Convertir a diccionario para especificar.
+MIN_FLOAT = 1e-12
+MAX_FLOAT = 1e12
+EXP_LIMIT = 500
+STRAIN_RANGE = np.logspace(-6, 1, 100)
+
+# Pesos de ajuste a modelo HH
+# ---------------------------------------------------------------
+WEIGHTED_FUNCTION_GQH = {
+                     "curve_weight_1":0.07, 
+                     "curve_weight_2":0.63, 
+                     "area_weight":0.3
+                     }
+WEIGHTED_FUNCTION_MKZ = {
+                     "curve_weight_1":0.07, 
+                     "curve_weight_2":0.63, 
+                     "area_weight":0.3
+                     }
