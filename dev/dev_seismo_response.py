@@ -29,15 +29,16 @@ logger = get_logger()
 
 
 class InputData:
-    def __init__(self, session_name):
+    def __init__(self, session_name, vs_profile, dynamic_curves):
 
         self.session = session_name
 
         self.raw_data_dir = STORAGE_DIR / "raw_data" / self.session
 
+        self.perfil = vs_profile
+        self.dynamic_curves = dynamic_curves
+
         self.seismic_path = self.raw_data_dir / ACCEL_FNAME
-        self.vs_path = self.raw_data_dir / VS_PROFILE_FNAME
-        self.curves_path = self.raw_data_dir / DINAMIC_CURVES_FNAME
         self.parameters_hh_path = self.raw_data_dir / PARAMETERS_HH_FNAME
 
     def _check_file_exists(self, path):
@@ -46,8 +47,6 @@ class InputData:
 
     def validate_all_inputs(self):
         self._check_file_exists(self.seismic_path)
-        self._check_file_exists(self.vs_path)
-        self._check_file_exists(self.curves_path)
         self._check_file_exists(self.parameters_hh_path)
 
     def input_ground_motion(self):
@@ -59,20 +58,18 @@ class InputData:
 
     def input_vs_profile(self):
         logger.info("Inicio lectura de perfil de velocidades")
-
-        data = InputValidator.load_file(self.vs_path)
-        InputValidator.validate_vs_profile(data)
+        data = np.column_stack(list(self.perfil.values()))
 
         amount_vs_rows = data.shape[0]
 
-        return Vs_Profile(data=str(self.vs_path)), amount_vs_rows
+        return Vs_Profile(data), amount_vs_rows
 
     def input_dynamic_curves(self, amount_vs_rows: int):
         logger.info("Inicio de lectura de curvas dinámicas")
 
-        InputValidator.validate_dynamic_curves(self.curves_path, amount_vs_rows)
+        #InputValidator.validate_dynamic_curves(self.dynamic_curves, amount_vs_rows)
 
-        return Multiple_GGmax_Damping_Curves(data=str(self.curves_path))
+        return Multiple_GGmax_Damping_Curves(data=self.dynamic_curves)
 
     def input_parameters_hh(self):
         return str(self.parameters_hh_path)
@@ -219,11 +216,13 @@ class ResultManager:
 
 
 @log_execution_time
-def execute_response_analysis(
-    base_session, session_name, simulation_case, boundary_case
+def execute_modified_response_analysis(
+    base_session, session_name, simulation_case, vs_profile, dynamic_curves, boundary_case
 ):
     input_data = InputData(
-        session_name=base_session,
+        session_name = base_session,
+        vs_profile = vs_profile,
+        dynamic_curves = dynamic_curves
     )
 
     input_data.validate_all_inputs()
