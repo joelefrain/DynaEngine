@@ -360,12 +360,12 @@ class Damping_Curve(Curve):
         if damping_unit == '1':
             self.damping *= 100  # unit: 1 --> %
 
-        if check_values and (
-            np.any(self.damping > 100) or np.any(self.damping < 0)
-        ):
-            raise ValueError(
-                'The provided damping values must be between [0, 100].'
-            )
+        # if check_values and (
+        #     np.any(self.damping > 100) or np.any(self.damping < 0)
+        # ):
+        #     raise ValueError(
+        #         'The provided damping values must be between [0, 100].'
+        #     )
 
     def get_HH_x_param(
             self,

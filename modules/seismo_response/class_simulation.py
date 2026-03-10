@@ -27,6 +27,7 @@ from modules.seismo_response.class_simulation_results import Simulation_Results
 from modules.seismo_response.class_Vs_profile import Vs_Profile
 
 from libs.config.config_variables import TEMP_DATA_DIR
+from libs.config.config_variables import CONVERT_MS2_TO_G
 
 from libs.config.config_logger import get_logger
 
@@ -586,7 +587,7 @@ class Nonlinear_Simulation(Simulation):
             stat.S_IRWXU | stat.S_IRGRP | stat.S_IXGRP | stat.S_IROTH | stat.S_IXOTH,
         )
 
-        f_max = 30  # maximum frequency modeled, unit is Hz
+        f_max = 25  # maximum frequency modeled, unit is Hz
         ppw = 10  # points per wavelength
         n_dt = 30  # number of sub-steps in one time step
         N_spr = 120  # number of Iwan springs
@@ -711,7 +712,7 @@ class Nonlinear_Simulation(Simulation):
         # ------------ Post-process files --------------------------------------
         layer_boundary_depth = np.genfromtxt("node_depth.dat").T
         layer_midpoint_depth = np.genfromtxt("layer_depth.dat").T
-        out_a = np.genfromtxt("out_a.dat")
+        out_a = np.genfromtxt("out_a.dat") / CONVERT_MS2_TO_G
         out_v = np.genfromtxt("out_v.dat")
         out_d = np.genfromtxt("out_d.dat")
         out_gamma = np.genfromtxt("out_gamma.dat")
@@ -752,6 +753,17 @@ class Nonlinear_Simulation(Simulation):
             amplitude_only=True,
             smooth_signal=True,
         )
+        Tn, SA, PSA, _, _, _, _ = sr.response_spectra(
+            accel_surface_2col,
+            damping=0.05,
+            T_min=0.01,
+            T_max=30,
+            n_pts=100,
+            show_fig=False,
+        )
+
+        acc_spectrum = np.column_stack((Tn, SA, PSA))
+
         os.chdir(cwd)
 
         # ------------ Create sim_results object and plot and/or save ----------
@@ -768,6 +780,7 @@ class Nonlinear_Simulation(Simulation):
             time_history_displ=out_d,
             time_history_strain=out_gamma,
             time_history_stress=out_tau,
+            acc_spectrum=acc_spectrum,
             motion_name=motion_name,
             output_dir=sim_dir,
         )

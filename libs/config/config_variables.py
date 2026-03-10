@@ -99,10 +99,11 @@ RETURN_PRD_LST = [100, 475, 1000, 2475, 5000, 10000]  # años
 # Constantes
 # ---------------------------------------------------------------
 UNIT_GROUND_MOTION = "g"
+CONVERT_MS2_TO_G = 9.81
 MIN_FLOAT = 1e-12
 MAX_FLOAT = 1e12
 EXP_LIMIT = 500
-STRAIN_RANGE = np.logspace(-6, 1, 100)
+STRAIN_RANGE = np.logspace(-6, -1, 100)
 
 # Pesos de ajuste a modelo HH
 # ---------------------------------------------------------------

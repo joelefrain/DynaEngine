@@ -1,6 +1,4 @@
 import numpy as np
-import threading
-import time
 import os
 import sys
 import matplotlib.pyplot as plt
@@ -24,8 +22,6 @@ def grafica_prueba(
     GGmax_GQH,
     GG_fit,
     gg_ref,
-    set_number,
-    n_sets,
     parametros_gqh,
     best_params,
     gamma_ref,
@@ -33,7 +29,7 @@ def grafica_prueba(
 
     fig, ax = plt.subplots(figsize=(7, 5))
 
-    ax.set_title(r"Bayesian Calibration of $G/G_\mathrm{max}$", fontsize=12)
+    ax.set_title(r"Bayesian Calibration of $G/G_\mathrm{max}$")
 
     ax.plot(STRAIN_RANGE, GGmax_GQH, label="GQH target", linewidth=2)
     ax.plot(STRAIN_RANGE, GG_fit, "r", label="HH fit", linewidth=2)
@@ -61,25 +57,24 @@ def grafica_prueba(
     fig.text(0.5, 0.12, gqh_params_text, ha="center", fontsize=8)
     fig.text(0.5, 0.06, best_params_text, ha="center", fontsize=8)
 
-    fig.savefig(CALIBRATION_DIR / f"Calibration_{set_number}_{n_sets}.png")
-
-    plt.close(fig)
+    fig.savefig(CALIBRATION_DIR / "Calibration.png")
 
 
-def run_set(
-    set_number,
-    G_max_range,
-    tau_max_range,
-    parametros_gqh_ranges,
-    n_sets,
-):
+def main():
 
-    G_max = np.random.uniform(*G_max_range)
-    tau_max = np.random.uniform(*tau_max_range)
+    # ---------------------------
+    # PARÁMETROS DEFINIDOS POR TI
+    # ---------------------------
+
+    G_max = 8.41e8
+    tau_max = 6.70e5
 
     parametros_gqh = {
-        key: np.random.uniform(low, high)
-        for key, (low, high) in parametros_gqh_ranges.items()
+        "theta_1": -0.18,
+        "theta_2": 0.96,
+        "theta_3": 0.70794578,
+        "theta_4": 1.0,
+        "theta_5": 0.5,
     }
 
     general_params = {
@@ -89,36 +84,30 @@ def run_set(
 
     modelo = "0"
 
-    start_time = time.time()
+    # ---------------------------
+    # CALIBRACIÓN
+    # ---------------------------
 
     best_params = calculate_calibration(
         general_params,
         parametros_gqh,
         modelo,
     )
-    
-    elapsed = time.time() - start_time
 
     gg_ref = general_params["gg_ref"]
     gamma_ref = general_params["gamma_ref"]
-    print(
-        f"(Set {set_number}) | gamma_ref={gamma_ref:.3e} | GGmax_ref={gg_ref:.3f} | G_max={G_max:.2e} | tau_max={tau_max:.2e}"
-    )
 
-    print(
-        f"(Set {set_number}) | GQH: θ1={parametros_gqh['theta_1']:.2e} θ2={parametros_gqh['theta_2']:.2e} θ3={parametros_gqh['theta_3']:.2e} θ4={parametros_gqh['theta_4']:.2e} θ5={parametros_gqh['theta_5']:.2e}"
-    )
+    # ---------------------------
+    # MODELO GQH
+    # ---------------------------
 
-    print(
-        f"(Set {set_number}) | HH: s={best_params['s']:.2e} d={best_params['d']:.2e} mu={best_params['mu']:.2e} a={best_params['a']:.2e} beta={best_params['beta']:.2e}"
-    )
-
-    print(f"(Set {set_number}) | Tiempo: {elapsed:.2f} s")
-
-    # Crear modelo para generar curvas
     model = GQHModelFormulation(parametros_gqh)
 
     GGmax_GQH = model.GGmax_model(gamma_ref)
+
+    # ---------------------------
+    # MODELO HH
+    # ---------------------------
 
     GG_fit = GGmax_HH_model(
         gg_ref,
@@ -132,52 +121,18 @@ def run_set(
         model,
     )
 
+    # ---------------------------
+    # GRAFICAR
+    # ---------------------------
+
     grafica_prueba(
         GGmax_GQH,
         GG_fit,
         gg_ref,
-        set_number,
-        n_sets,
         parametros_gqh,
         best_params,
         gamma_ref,
     )
-
-
-def main():
-
-    n_sets = 10
-
-    G_max_range = (5e6, 1e7)
-    tau_max_range = (1e5, 3e5)
-
-    parametros_gqh_ranges = {
-        "theta_1": (0.05, 0.2),
-        "theta_2": (0.2, 0.5),
-        "theta_3": (0.5, 2),
-        "theta_4": (0.5, 2),
-        "theta_5": (1, 3),
-    }
-
-    threads = []
-
-    for i in range(n_sets):
-        t = threading.Thread(
-            target=run_set,
-            args=(
-                i + 1,
-                G_max_range,
-                tau_max_range,
-                parametros_gqh_ranges,
-                n_sets,
-            ),
-        )
-
-        threads.append(t)
-        t.start()
-
-    for t in threads:
-        t.join()
 
 
 if __name__ == "__main__":

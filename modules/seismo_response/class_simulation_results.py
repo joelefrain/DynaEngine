@@ -106,6 +106,7 @@ class Simulation_Results:
     time_history_displ: np.ndarray | None
     time_history_stress: np.ndarray | None
     time_history_strain: np.ndarray | None
+    acc_spectrum: np.ndarray | None # New
     motion_name: str
     output_dir: str
 
@@ -124,6 +125,7 @@ class Simulation_Results:
             time_history_displ: np.ndarray | None = None,
             time_history_stress: np.ndarray | None = None,
             time_history_strain: np.ndarray | None = None,
+            acc_spectrum: np.ndarray | None = None, # New
             motion_name: str | None = None,
             output_dir: str | None = None,
     ) -> None:
@@ -213,6 +215,7 @@ class Simulation_Results:
         self.time_history_displ = time_history_displ
         self.time_history_stress = time_history_stress
         self.time_history_strain = time_history_strain
+        self.acc_spectrum = acc_spectrum
         self.motion_name = motion_name
         self.output_dir = output_dir
 
@@ -440,6 +443,7 @@ class Simulation_Results:
         )
         fn_max_avd = os.path.join(od, '%s_max_a_v_d.txt' % motion_name)
         fn_max_gt = os.path.join(od, '%s_max_gamma_tau.txt' % motion_name)
+        fn_out_acc_spectrum = os.path.join(od, '%s_acc_spectrum.txt' % motion_name) # New
 
         fmt_dict = {'delimiter': '\t', 'fmt': '%.6g'}
 
@@ -479,6 +483,8 @@ class Simulation_Results:
                 self.trans_func_smoothed.amplitude_2col,
                 **fmt_dict,
             )
+
+        np.savetxt(fn_out_acc_spectrum, self.acc_spectrum, **fmt_dict) # New
 
         if verbose:
             print('Simulation results saved to %s' % od)

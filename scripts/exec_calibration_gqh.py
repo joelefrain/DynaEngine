@@ -22,9 +22,9 @@ def calculate_calibration(
         case _:
             raise ValueError("El modelo proporcionado no existe")
 
-    gamma_ref = general_params["gamma_ref"]
     G_max = general_params["G_max"]
     tau_max = general_params["tau_max"]
+    gamma_ref = tau_max / G_max
     gg_ref = model.calculate_gg_ref()
     GGmax_GQH = model.GGmax_model(gamma_ref)
 
@@ -64,5 +64,6 @@ def calculate_calibration(
 
     best_params["beta"] = beta
     general_params["gg_ref"] = gg_ref
+    general_params["gamma_ref"] = gamma_ref
 
     return best_params
