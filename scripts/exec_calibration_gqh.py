@@ -8,7 +8,10 @@ from modules.dynamic_curves.class_cost_function import GGmaxCalibrationCost
 from modules.dynamic_curves.helper_calibration_gqh import GQHModelFormulation
 from modules.dynamic_curves.helper_transformation_hh import GGmax_HH_model
 
+from libs.config.config_variables import PBOUNDS_HH
+
 matplotlib.use("Agg")
+
 
 def calculate_calibration(
     general_params: dict, base_params_gqh: dict, modelo: str
@@ -28,9 +31,11 @@ def calculate_calibration(
     gg_ref = model.calculate_gg_ref()
     GGmax_GQH = model.GGmax_model(gamma_ref)
 
-    def objective(s, d, mu, a):
+    def objective(gamma_t, s, d, mu, a):
 
-        GG_model = GGmax_HH_model(gg_ref, s, d, mu, a, G_max, gamma_ref, tau_max, model)
+        GG_model = GGmax_HH_model(
+            gg_ref, s, d, mu, a, G_max, gamma_ref, gamma_t, tau_max, model
+        )
 
         if np.any(np.isnan(GG_model)) or np.any(GG_model <= 0):
             return -1e10
@@ -39,12 +44,7 @@ def calculate_calibration(
 
         return -error
 
-    pbounds = {
-        "s": (0.1, 2.5),
-        "d": (0.1, 3),
-        "mu": (1, 1e5),
-        "a": (0.1, 4),
-    }
+    pbounds = PBOUNDS_HH
 
     optimizer = BayesianOptimization(
         f=objective, pbounds=pbounds, random_state=42, verbose=0
@@ -58,6 +58,7 @@ def calculate_calibration(
         best_params["a"],
         best_params["mu"],
         gamma_ref,
+        best_params["gamma_t"],
         tau_max,
         G_max,
     )

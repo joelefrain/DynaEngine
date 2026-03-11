@@ -13,10 +13,10 @@ from modules.dynamic_curves.helper_transformation_hh import GGmax_HH_model
 from libs.config.config_variables import STORAGE_DIR, STRAIN_RANGE
 
 
-CALIBRATION_DIR = STORAGE_DIR / "output" / "calibraciones_columna_05"
+CALIBRATION_DIR = STORAGE_DIR / "output" / "calibraciones_columna_03_v3_a_range"
 os.makedirs(CALIBRATION_DIR, exist_ok=True)
 
-INPUT_FILE = STORAGE_DIR / "raw_data" /"input_parameters.xlsx"
+INPUT_FILE = STORAGE_DIR / "raw_data" /"input_parameters_c3.xlsx"
 
 
 def grafica_prueba(
@@ -91,6 +91,7 @@ def run_set(set_number, params):
         best_params["a"],
         G_max,
         gamma_ref,
+        best_params["gamma_t"],
         tau_max,
         model,
     )
@@ -110,6 +111,7 @@ def run_set(set_number, params):
         "Gmax": G_max,
         "Tmax": tau_max,
         "gamma_ref": gamma_ref,
+        "gamma_t": best_params["gamma_t"],
         "GGmax_ref": gg_ref,
         **parametros_gqh,
         **best_params,
@@ -136,7 +138,7 @@ def main():
 
     results_df = pd.DataFrame(results)
 
-    output_excel = CALIBRATION_DIR / "calibration_results.xlsx"
+    output_excel = CALIBRATION_DIR / "calibration_results_C1_v2.xlsx"
     results_df.to_excel(output_excel, index=False)
 
     print("Resultados guardados en:", output_excel)

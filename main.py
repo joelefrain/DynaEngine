@@ -35,7 +35,7 @@ from dev.dev_seismo_response import execute_modified_response_analysis
 # ==================================================
 
 def test_seismo_response():
-    base_session = "sesion_20250309_C4_tarapaca_ns"
+    base_session = "sesion_20250309_C1_atic_ew"
 
     short_id = uuid.uuid4().hex[:4]
     session_name = f"{base_session}_{short_id}"

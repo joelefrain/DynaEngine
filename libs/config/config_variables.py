@@ -103,17 +103,26 @@ CONVERT_MS2_TO_G = 9.81
 MIN_FLOAT = 1e-12
 MAX_FLOAT = 1e12
 EXP_LIMIT = 500
-STRAIN_RANGE = np.logspace(-6, -1, 100)
+STRAIN_RANGE = np.logspace(-6, -1, 50)
 
 # Pesos de ajuste a modelo HH
 # ---------------------------------------------------------------
 WEIGHTED_FUNCTION_GQH = {
-                     "curve_weight_1":0.07, 
-                     "curve_weight_2":0.63, 
-                     "area_weight":0.3
+                     "curve_weight_1":0.02, # sesgo
+                     "curve_weight_2":0.40, # 60% para urv superior 
+                     "area_weight":0.58
                      }
 WEIGHTED_FUNCTION_MKZ = {
                      "curve_weight_1":0.07, 
                      "curve_weight_2":0.63, 
                      "area_weight":0.3
                      }
+
+k = 3
+PBOUNDS_HH = {
+        "gamma_t": (1e-6, 1e-2),
+        "s": (0.1, 50),
+        "d": (0.1, 6),
+        "mu": (1, 1e5),
+        "a": (0.01, 1),
+    }
