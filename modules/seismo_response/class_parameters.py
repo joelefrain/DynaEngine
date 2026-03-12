@@ -65,25 +65,24 @@ class Parameter(collections.UserDict):
     func_stress: Callable[[dict[str, float], ...], np.ndarray] | None
 
     def __init__(
-            self,
-            param_dict: dict[str, float],
-            *,
-            allowable_keys: set[str] | None = None,
-            func_stress: Callable[[dict[str, float], ...], np.ndarray]
-            | None = None,
+        self,
+        param_dict: dict[str, float],
+        *,
+        allowable_keys: set[str] | None = None,
+        func_stress: Callable[[dict[str, float], ...], np.ndarray] | None = None,
     ) -> None:
         if not isinstance(param_dict, dict):
-            raise TypeError('`param_dict` must be a dictionary.')
+            raise TypeError("`param_dict` must be a dictionary.")
 
         if not isinstance(allowable_keys, set) or any(
             not isinstance(_, str) for _ in allowable_keys
         ):
-            raise TypeError('`allowable_keys` should be a set of str.')
+            raise TypeError("`allowable_keys` should be a set of str.")
 
         if param_dict.keys() != allowable_keys:
             raise KeyError(
-                'Invalid keys exist in your input data. We only '
-                'allow %s.' % allowable_keys,
+                "Invalid keys exist in your input data. We only "
+                "allow %s." % allowable_keys,
             )
 
         self.allowable_keys = allowable_keys
@@ -91,7 +90,7 @@ class Parameter(collections.UserDict):
         super().__init__(param_dict)
 
     def __repr__(self) -> str:
-        return json.dumps(self.data, indent=2).replace('"', '')
+        return json.dumps(self.data, indent=2).replace('"', "")
 
     def __setitem__(self, key, item) -> None:
         if key not in self.allowable_keys:
@@ -100,9 +99,7 @@ class Parameter(collections.UserDict):
         self.data[key] = item
 
     def __delitem__(self, key) -> None:
-        raise ValueError(
-            'Deleting items from the parameter set is not allowed.'
-        )
+        raise ValueError("Deleting items from the parameter set is not allowed.")
 
     def serialize(self) -> np.ndarray:
         """
@@ -122,7 +119,7 @@ class Parameter(collections.UserDict):
         return np.array(param_array)
 
     def get_stress(
-            self, strain_in_pct: np.ndarray = STRAIN_RANGE_PCT
+        self, strain_in_pct: np.ndarray = STRAIN_RANGE_PCT
     ) -> np.ndarray | None:
         """
         Get the shear stress array inferred from the set of parameters
@@ -139,15 +136,13 @@ class Parameter(collections.UserDict):
             Its unit is identical to the unit of Gmax (one of the HH parameters).
         """
         if self.func_stress is None:
-            print('You did not provide a function to calculate shear stress.')
+            print("You did not provide a function to calculate shear stress.")
             return None
 
-        hlp.assert_1D_numpy_array(strain_in_pct, name='`strain_in_pct`')
+        hlp.assert_1D_numpy_array(strain_in_pct, name="`strain_in_pct`")
         return self.func_stress(strain_in_pct / 100.0, **self.data)
 
-    def get_GGmax(
-            self, strain_in_pct: np.ndarray = STRAIN_RANGE_PCT
-    ) -> np.ndarray:
+    def get_GGmax(self, strain_in_pct: np.ndarray = STRAIN_RANGE_PCT) -> np.ndarray:
         """
         Get the G/Gmax array inferred from the set of parameters
 
@@ -163,17 +158,15 @@ class Parameter(collections.UserDict):
         """
         tau = self.get_stress(strain_in_pct=strain_in_pct)
         if tau is None:
-            print('You did not provide a function to calculate shear stress.')
+            print("You did not provide a function to calculate shear stress.")
             return None
 
-        Gmax = self.data['Gmax']
+        Gmax = self.data["Gmax"]
         strain_in_1 = strain_in_pct / 100.0
         GGmax = sr.calc_GGmax_from_stress_strain(strain_in_1, tau, Gmax=Gmax)
         return GGmax
 
-    def get_damping(
-            self, strain_in_pct: np.ndarray = STRAIN_RANGE_PCT
-    ) -> np.ndarray:
+    def get_damping(self, strain_in_pct: np.ndarray = STRAIN_RANGE_PCT) -> np.ndarray:
         """
         Get the damping array inferred from the set of parameters
 
@@ -188,7 +181,7 @@ class Parameter(collections.UserDict):
             The damping array (unit: %), with the same shape as the strain array
         """
         if self.func_stress is None:
-            print('You did not provide a function to calculate shear stress.')
+            print("You did not provide a function to calculate shear stress.")
             return None
 
         damping_in_1 = sr.calc_damping_from_param(
@@ -199,10 +192,10 @@ class Parameter(collections.UserDict):
         return damping_in_1 * 100
 
     def plot_curves(
-            self,
-            figsize: tuple[float, float] = None,
-            dpi: float = 100,
-            **kwargs_to_matplotlib: dict[Any, Any],
+        self,
+        figsize: tuple[float, float] = None,
+        dpi: float = 100,
+        **kwargs_to_matplotlib: dict[Any, Any],
     ) -> tuple[Figure, list[Axes]]:
         """
         Plot G/Gmax and damping curves from the model parameters
@@ -238,15 +231,15 @@ class Parameter(collections.UserDict):
         ax = [None, None]
         ax[0] = plt.subplot(121)
         ax[0].semilogx(strain, GGmax)
-        ax[0].grid(ls=':')
-        ax[0].set_xlabel('Strain [%]')
-        ax[0].set_ylabel('G/Gmax')
+        ax[0].grid(ls=":")
+        ax[0].set_xlabel("Strain [%]")
+        ax[0].set_ylabel("G/Gmax")
 
         ax[1] = plt.subplot(122)
         ax[1].semilogx(strain, damping)
-        ax[1].grid(ls=':')
-        ax[1].set_xlabel('Strain [%]')
-        ax[1].set_ylabel('Damping [%]')
+        ax[1].grid(ls=":")
+        ax[1].set_xlabel("Strain [%]")
+        ax[1].set_ylabel("Damping [%]")
 
         fig.tight_layout(pad=0.3, h_pad=0.4, w_pad=0.5)
 
@@ -277,15 +270,15 @@ class HH_Param(Parameter):
 
     def __init__(self, param_dict: dict[str, float]) -> None:
         allowable_keys = {
-            'gamma_t',
-            'a',
-            'gamma_ref',
-            'beta',
-            's',
-            'Gmax',
-            'mu',
-            'Tmax',
-            'd',
+            "gamma_t",
+            "a",
+            "gamma_ref",
+            "beta",
+            "s",
+            "Gmax",
+            "mu",
+            "Tmax",
+            "d",
         }
         super().__init__(
             param_dict,
@@ -324,7 +317,7 @@ class MKZ_Param(Parameter):
     allowable_keys: set[str]
 
     def __init__(self, param_dict: dict[str, float]) -> None:
-        allowable_keys = {'gamma_ref', 's', 'beta', 'Gmax'}
+        allowable_keys = {"gamma_ref", "s", "beta", "Gmax"}
         super().__init__(
             param_dict,
             func_stress=mkz.tau_MKZ,
@@ -362,7 +355,15 @@ class GQH_Param(Parameter):
     allowable_keys: set[str]
 
     def __init__(self, param_dict: dict[str, float]) -> None:
-        allowable_keys = {'gamma_ref', 'theta_1', 'theta_2', 'theta_3', 'theta_4', 'theta_5', 'Gmax'}
+        allowable_keys = {
+            "gamma_ref",
+            "theta_1",
+            "theta_2",
+            "theta_3",
+            "theta_4",
+            "theta_5",
+            "Gmax",
+        }
         super().__init__(
             param_dict,
             func_stress=gqh.tau_GQH,
@@ -419,10 +420,10 @@ class Param_Multi_Layer:
     n_layer: int
 
     def __init__(
-            self,
-            list_of_param_data: list[dict[str, float]] | list[Parameter],
-            *,
-            element_class: Type[Parameter],
+        self,
+        list_of_param_data: list[dict[str, float]] | list[Parameter],
+        *,
+        element_class: Type[Parameter],
     ) -> None:
         param_list: list[Parameter] = []
         for param_data in list_of_param_data:
@@ -432,7 +433,7 @@ class Param_Multi_Layer:
                 param_list.append(param_data)
             else:
                 raise TypeError(
-                    'An element in ``list_of_param_data`` has invalid type.',
+                    "An element in ``list_of_param_data`` has invalid type.",
                 )
 
         self.param_list = param_list
@@ -454,17 +455,17 @@ class Param_Multi_Layer:
         if isinstance(i, slice):  # return an object of the same class
             return self.__class__(self.param_list[i])  # filled with the sliced data
 
-        raise TypeError('Indices must be integers or slices, not %s' % type(i))
+        raise TypeError("Indices must be integers or slices, not %s" % type(i))
 
     def __delitem__(self, i) -> None:
         del self.param_list[i]
         self.n_layer -= 1
 
     def construct_curves(
-            self,
-            strain_in_pct: np.ndarray = STRAIN_RANGE_PCT,
-            curve_type: str | None = None,
-    ) -> tuple['Multiple_GGmax_Curves', 'Multiple_Damping_Curves']:
+        self,
+        strain_in_pct: np.ndarray = STRAIN_RANGE_PCT,
+        curve_type: str | None = None,
+    ) -> tuple["Multiple_GGmax_Curves", "Multiple_Damping_Curves"]:
         """
         Construct G/Gmax and damping curves from parameter values.
 
@@ -495,22 +496,20 @@ class Param_Multi_Layer:
             GGmax = param.get_GGmax(strain_in_pct=strain_in_pct)
             damping = param.get_damping(strain_in_pct=strain_in_pct)
             if curves is None:
-                curves = np.column_stack(
-                    (strain_in_pct, GGmax, strain_in_pct, damping)
-                )
+                curves = np.column_stack((strain_in_pct, GGmax, strain_in_pct, damping))
             else:
                 curves = np.column_stack(
                     (curves, strain_in_pct, GGmax, strain_in_pct, damping),
                 )
 
-        if curve_type == 'ggmax':
+        if curve_type == "ggmax":
             GGmax_curve_list, _ = hlp.extract_from_curve_format(
                 curves,
                 ensure_non_negative=False,
             )
             mgc = Multiple_GGmax_Curves(GGmax_curve_list)
             mdc = None
-        elif curve_type == 'xi':
+        elif curve_type == "xi":
             _, damping_curves_list = hlp.extract_from_curve_format(
                 curves,
                 ensure_non_negative=False,
@@ -541,11 +540,11 @@ class Param_Multi_Layer:
         return param_2D_array
 
     def save_txt(
-            self,
-            filename: str,
-            precision: str = '%.5g',
-            sep: str = '\t',
-            **kw_to_savetxt: dict[Any, Any],
+        self,
+        filename: str,
+        precision: str = "%.5g",
+        sep: str = "\t",
+        **kw_to_savetxt: dict[Any, Any],
     ) -> None:
         """
         Save data as text file.
@@ -625,13 +624,10 @@ class HH_Param_Multi_Layer(Param_Multi_Layer):
     n_layer: int
 
     def __init__(
-            self,
-            filename_or_data: str
-            | np.ndarray
-            | list[dict[str, float]]
-            | list[HH_Param],
-            *,
-            sep: str = '\t',
+        self,
+        filename_or_data: str | np.ndarray | list[dict[str, float]] | list[HH_Param],
+        *,
+        sep: str = "\t",
     ) -> None:
         if isinstance(filename_or_data, str):  # file name
             self._filename = filename_or_data
@@ -641,12 +637,8 @@ class HH_Param_Multi_Layer(Param_Multi_Layer):
                 hh.deserialize_array_to_params(_) for _ in list_of_param_array
             ]
         elif isinstance(filename_or_data, np.ndarray):
-            hlp.assert_2D_numpy_array(
-                filename_or_data, name='`filename_or_data`'
-            )
-            list_of_param_array = hlp.extract_from_param_format(
-                filename_or_data
-            )
+            hlp.assert_2D_numpy_array(filename_or_data, name="`filename_or_data`")
+            list_of_param_array = hlp.extract_from_param_format(filename_or_data)
             list_of_param = [
                 hh.deserialize_array_to_params(_) for _ in list_of_param_array
             ]
@@ -654,7 +646,7 @@ class HH_Param_Multi_Layer(Param_Multi_Layer):
             self._filename = None
             list_of_param = filename_or_data
         else:
-            raise TypeError('Unrecognized type for ``filename_or_data``.')
+            raise TypeError("Unrecognized type for ``filename_or_data``.")
 
         self._sep = sep
 
@@ -718,13 +710,10 @@ class MKZ_Param_Multi_Layer(Param_Multi_Layer):
     n_layer: int
 
     def __init__(
-            self,
-            filename_or_data: str
-            | np.ndarray
-            | list[dict[str, float]]
-            | list[HH_Param],
-            *,
-            sep: str = '\t',
+        self,
+        filename_or_data: str | np.ndarray | list[dict[str, float]] | list[HH_Param],
+        *,
+        sep: str = "\t",
     ) -> None:
         if isinstance(filename_or_data, str):  # file name
             self._filename = filename_or_data
@@ -734,12 +723,8 @@ class MKZ_Param_Multi_Layer(Param_Multi_Layer):
                 mkz.deserialize_array_to_params(_) for _ in list_of_param_array
             ]
         elif isinstance(filename_or_data, np.ndarray):
-            hlp.assert_2D_numpy_array(
-                filename_or_data, name='`filename_or_data`'
-            )
-            list_of_param_array = hlp.extract_from_param_format(
-                filename_or_data
-            )
+            hlp.assert_2D_numpy_array(filename_or_data, name="`filename_or_data`")
+            list_of_param_array = hlp.extract_from_param_format(filename_or_data)
             list_of_param = [
                 mkz.deserialize_array_to_params(_) for _ in list_of_param_array
             ]
@@ -747,7 +732,7 @@ class MKZ_Param_Multi_Layer(Param_Multi_Layer):
             self._filename = None
             list_of_param = filename_or_data
         else:
-            raise TypeError('Unrecognized type for ``filename_or_data``.')
+            raise TypeError("Unrecognized type for ``filename_or_data``.")
 
         self._sep = sep
 
@@ -811,13 +796,10 @@ class GQH_Param_Multi_Layer(Param_Multi_Layer):
     n_layer: int
 
     def __init__(
-            self,
-            filename_or_data: str
-            | np.ndarray
-            | list[dict[str, float]]
-            | list[GQH_Param],
-            *,
-            sep: str = '\t',
+        self,
+        filename_or_data: str | np.ndarray | list[dict[str, float]] | list[GQH_Param],
+        *,
+        sep: str = "\t",
     ) -> None:
         if isinstance(filename_or_data, str):  # file name
             self._filename = filename_or_data
@@ -827,12 +809,8 @@ class GQH_Param_Multi_Layer(Param_Multi_Layer):
                 gqh.deserialize_array_to_params(_) for _ in list_of_param_array
             ]
         elif isinstance(filename_or_data, np.ndarray):
-            hlp.assert_2D_numpy_array(
-                filename_or_data, name='`filename_or_data`'
-            )
-            list_of_param_array = hlp.extract_from_param_format(
-                filename_or_data
-            )
+            hlp.assert_2D_numpy_array(filename_or_data, name="`filename_or_data`")
+            list_of_param_array = hlp.extract_from_param_format(filename_or_data)
             list_of_param = [
                 gqh.deserialize_array_to_params(_) for _ in list_of_param_array
             ]
@@ -840,7 +818,7 @@ class GQH_Param_Multi_Layer(Param_Multi_Layer):
             self._filename = None
             list_of_param = filename_or_data
         else:
-            raise TypeError('Unrecognized type for ``filename_or_data``.')
+            raise TypeError("Unrecognized type for ``filename_or_data``.")
 
         self._sep = sep
 

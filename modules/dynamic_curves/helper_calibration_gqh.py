@@ -129,7 +129,9 @@ class GQHModelFormulation:
         float
             Valor calibrado de beta.
         """
-        omega = 1 - 1 / (1 + 10 ** (-a* (np.log10(gamma_ref/gamma_t) - 4.039*a**-1.036)))
+        omega = 1 - 1 / (
+            1 + 10 ** (-a * (np.log10(gamma_ref / gamma_t) - 4.039 * a**-1.036))
+        )
 
         ref = gg_ref - (1 - omega) * mu * gamma_ref ** (d - 1) / (
             1 + (mu * G_max * gamma_ref**d) / tau_max

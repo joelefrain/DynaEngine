@@ -23,15 +23,15 @@ class Damping_Calibration:
 
     def __init__(self, vs_profile: Vs_Profile) -> None:
         if not isinstance(vs_profile, Vs_Profile):
-            raise TypeError('`vs_profile` must be of type Vs_Profile.')
+            raise TypeError("`vs_profile` must be of type Vs_Profile.")
 
         self.vs_profile = vs_profile
 
     def get_damping_curves(
-            self,
-            strain_in_pct: np.ndarray = STRAIN_RANGE_PCT,
-            use_Darendeli_Dmin: bool = False,
-            show_fig: bool = False,
+        self,
+        strain_in_pct: np.ndarray = STRAIN_RANGE_PCT,
+        use_Darendeli_Dmin: bool = False,
+        show_fig: bool = False,
     ) -> Multiple_Damping_Curves:
         """
         Calculate damping curves using empirical formulas by Darendeli (2001).
@@ -87,8 +87,8 @@ class Damping_Calibration:
 
             dc = Damping_Curve(
                 np.column_stack((strain_in_pct, xi_j)),
-                strain_unit='%',
-                damping_unit='1',
+                strain_unit="%",
+                damping_unit="1",
                 interpolate=False,
                 check_values=True,
             )
@@ -126,9 +126,7 @@ class Damping_Calibration:
         HH_x_param = mdc.get_all_HH_x_params(**kwargs)
         return HH_x_param
 
-    def get_H4_x_param(
-            self, **kwargs: dict[Any, Any]
-    ) -> MKZ_Param_Multi_Layer:
+    def get_H4_x_param(self, **kwargs: dict[Any, Any]) -> MKZ_Param_Multi_Layer:
         """
         Obtain H4_x parameters for each layer (i.e., MKZ model parameters
         that best fit given damping values, for each layer).

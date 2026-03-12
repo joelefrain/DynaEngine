@@ -8,7 +8,7 @@ from modules.seismo_response import helper_site_response as sr
 
 
 def tau_FKZ(
-        gamma: np.ndarray, *, Gmax: float, mu: float, d: float, Tmax: float
+    gamma: np.ndarray, *, Gmax: float, mu: float, d: float, Tmax: float
 ) -> np.ndarray:
     """
     Calculate the FKZ shear stress. The FKZ model is proposed in Shi & Asimaki
@@ -48,17 +48,13 @@ def tau_FKZ(
         The shear stress determined by the formula above. Same shape as ``x``,
         and same unit as ``Gmax``.
     """
-    hlp.assert_1D_numpy_array(gamma, name='`gamma`')
-    T_FKZ = (
-        mu * Gmax * gamma**d / (1 + Gmax / Tmax * mu * np.abs(gamma) ** d)
-    )
+    hlp.assert_1D_numpy_array(gamma, name="`gamma`")
+    T_FKZ = mu * Gmax * gamma**d / (1 + Gmax / Tmax * mu * np.abs(gamma) ** d)
 
     return T_FKZ
 
 
-def transition_function(
-        gamma: np.ndarray, *, a: float, gamma_t: float
-) -> np.ndarray:
+def transition_function(gamma: np.ndarray, *, a: float, gamma_t: float) -> np.ndarray:
     """
     Calculate the transition function of the HH model, as defined
     in Equation (7) of Shi & Asimaki (2017).
@@ -78,16 +74,14 @@ def transition_function(
     w : np.ndarray
         The transition function, ranging from 0 to 1. Same shape as ``x``.
     """
-    hlp.assert_1D_numpy_array(gamma, name='`gamma`')
+    hlp.assert_1D_numpy_array(gamma, name="`gamma`")
     assert gamma_t > 0
 
     # We have to manually handle the edge cases where we may have
     # 1e(a very large number) or 1e(a very small number)
     w = np.zeros(gamma.shape)
     for ix, g in enumerate(gamma):
-        intermediateValue = np.log10(np.abs(g) / gamma_t) - 4.039 * a ** (
-            -1.036
-        )
+        intermediateValue = np.log10(np.abs(g) / gamma_t) - 4.039 * a ** (-1.036)
         if -a * intermediateValue > 305:
             w[ix] = 1.0
         elif -a * intermediateValue < -305:
@@ -105,17 +99,17 @@ def transition_function(
 
 
 def tau_HH(
-        gamma: np.ndarray,
-        *,
-        gamma_t: float,
-        a: float,
-        gamma_ref: float,
-        beta: float,
-        s: float,
-        Gmax: float,
-        mu: float,
-        Tmax: float,
-        d: float,
+    gamma: np.ndarray,
+    *,
+    gamma_t: float,
+    a: float,
+    gamma_ref: float,
+    beta: float,
+    s: float,
+    Gmax: float,
+    mu: float,
+    Tmax: float,
+    d: float,
 ) -> np.ndarray:
     """
     Calculate the HH shear stress, which is proposed in Shi & Asimaki (2017).
@@ -160,20 +154,20 @@ def tau_HH(
 
 
 def fit_HH_x_single_layer(
-        damping_data_in_pct: np.ndarray,
-        *,
-        use_scipy: bool = True,
-        pop_size: int = 800,
-        n_gen: int = 100,
-        lower_bound_power: float = -4,
-        upper_bound_power: float = 6,
-        eta: float = 0.1,
-        seed: int = 0,
-        show_fig: bool = False,
-        verbose: bool = False,
-        suppress_warnings: bool = True,
-        parallel: bool = False,
-        n_cores: int | None = None,
+    damping_data_in_pct: np.ndarray,
+    *,
+    use_scipy: bool = True,
+    pop_size: int = 800,
+    n_gen: int = 100,
+    lower_bound_power: float = -4,
+    upper_bound_power: float = 6,
+    eta: float = 0.1,
+    seed: int = 0,
+    show_fig: bool = False,
+    verbose: bool = False,
+    suppress_warnings: bool = True,
+    parallel: bool = False,
+    n_cores: int | None = None,
 ) -> dict[str, float]:
     """
     Perform HH_x curve fitting for one damping curve using the genetic
@@ -228,7 +222,7 @@ def fit_HH_x_single_layer(
     """
     hlp.check_two_column_format(
         damping_data_in_pct,
-        name='damping_data_in_pct',
+        name="damping_data_in_pct",
         ensure_non_negative=True,
     )
 
@@ -270,15 +264,15 @@ def fit_HH_x_single_layer(
     )
 
     best_param = {}
-    best_param['gamma_t'] = 10 ** result[0]
-    best_param['a'] = 10 ** result[1]
-    best_param['gamma_ref'] = 10 ** result[2]
-    best_param['beta'] = 10 ** result[3]
-    best_param['s'] = 10 ** result[4]
-    best_param['Gmax'] = 10 ** result[5]
-    best_param['mu'] = 10 ** result[6]
-    best_param['Tmax'] = 10 ** result[7]
-    best_param['d'] = 10 ** result[8]
+    best_param["gamma_t"] = 10 ** result[0]
+    best_param["a"] = 10 ** result[1]
+    best_param["gamma_ref"] = 10 ** result[2]
+    best_param["beta"] = 10 ** result[3]
+    best_param["s"] = 10 ** result[4]
+    best_param["Gmax"] = 10 ** result[5]
+    best_param["mu"] = 10 ** result[6]
+    best_param["Tmax"] = 10 ** result[7]
+    best_param["d"] = 10 ** result[8]
 
     if show_fig:
         sr._plot_damping_curve_fit(damping_data_in_pct, best_param, tau_HH)
@@ -286,9 +280,7 @@ def fit_HH_x_single_layer(
     return best_param
 
 
-def _damping_misfit(
-        param: tuple[float, ...], damping_data: np.ndarray
-) -> float:
+def _damping_misfit(param: tuple[float, ...], damping_data: np.ndarray) -> float:
     """
     Calculate the misfit given a set of HH parameters. Note that the values
     in `param` are actually the 10-based power of the actual HH parameters.
@@ -362,15 +354,15 @@ def serialize_params_to_array(param: dict[str, float]) -> np.ndarray:
     """
     assert len(param) == 9
     order = [
-        'gamma_t',
-        'a',
-        'gamma_ref',
-        'beta',
-        's',
-        'Gmax',
-        'mu',
-        'Tmax',
-        'd',
+        "gamma_t",
+        "a",
+        "gamma_ref",
+        "beta",
+        "s",
+        "Gmax",
+        "mu",
+        "Tmax",
+        "d",
     ]
     param_array = []
     for key in order:
@@ -401,14 +393,14 @@ def deserialize_array_to_params(array: np.ndarray) -> dict[str, float]:
     assert len(array) == 9
 
     param = {}
-    param['gamma_t'] = array[0]
-    param['a'] = array[1]
-    param['gamma_ref'] = array[2]
-    param['beta'] = array[3]
-    param['s'] = array[4]
-    param['Gmax'] = array[5]
-    param['mu'] = array[6]
-    param['Tmax'] = array[7]
-    param['d'] = array[8]
+    param["gamma_t"] = array[0]
+    param["a"] = array[1]
+    param["gamma_ref"] = array[2]
+    param["beta"] = array[3]
+    param["s"] = array[4]
+    param["Gmax"] = array[5]
+    param["mu"] = array[6]
+    param["Tmax"] = array[7]
+    param["d"] = array[8]
 
     return param

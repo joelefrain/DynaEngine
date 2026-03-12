@@ -85,7 +85,9 @@ class Simulation:
     input_motion: Ground_Motion
     boundary: Literal["elastic", "rigid"]
     G_param: HH_Param_Multi_Layer | MKZ_Param_Multi_Layer | GQH_Param_Multi_Layer | None
-    xi_param: HH_Param_Multi_Layer | MKZ_Param_Multi_Layer | GQH_Param_Multi_Layer | None
+    xi_param: (
+        HH_Param_Multi_Layer | MKZ_Param_Multi_Layer | GQH_Param_Multi_Layer | None
+    )
     GGmax_and_damping_curves: Multiple_GGmax_Damping_Curves | None
 
     # fmt: off
@@ -482,7 +484,9 @@ class Nonlinear_Simulation(Simulation):
     soil_profile: Vs_Profile
     input_motion: Ground_Motion
     G_param: HH_Param_Multi_Layer | MKZ_Param_Multi_Layer | GQH_Param_Multi_Layer | None
-    xi_param: HH_Param_Multi_Layer | MKZ_Param_Multi_Layer | GQH_Param_Multi_Layer | None
+    xi_param: (
+        HH_Param_Multi_Layer | MKZ_Param_Multi_Layer | GQH_Param_Multi_Layer | None
+    )
     boundary: Literal["elastic", "rigid"]
 
     def __init__(
@@ -490,8 +494,14 @@ class Nonlinear_Simulation(Simulation):
         soil_profile: Vs_Profile,
         input_motion: Ground_Motion,
         *,
-        G_param: HH_Param_Multi_Layer | MKZ_Param_Multi_Layer | GQH_Param_Multi_Layer | None,
-        xi_param: HH_Param_Multi_Layer | MKZ_Param_Multi_Layer | GQH_Param_Multi_Layer | None,
+        G_param: HH_Param_Multi_Layer
+        | MKZ_Param_Multi_Layer
+        | GQH_Param_Multi_Layer
+        | None,
+        xi_param: HH_Param_Multi_Layer
+        | MKZ_Param_Multi_Layer
+        | GQH_Param_Multi_Layer
+        | None,
         boundary: Literal["elastic", "rigid"] = "elastic",
     ) -> None:
         if G_param is None:
@@ -644,9 +654,9 @@ class Nonlinear_Simulation(Simulation):
         else:
             raise ValueError("Unknown operating system.")
 
-        import PySeismoSoil
+        import modules.seismo_response
 
-        package_path = importlib.resources.files(PySeismoSoil)
+        package_path = importlib.resources.files(modules.seismo_response)
         dir_exec_files = str(package_path / "exec_files")
         shutil.copy(os.path.join(dir_exec_files, "NLHH.%s" % exec_ext), sim_dir)
         np.savetxt(os.path.join(sim_dir, "tabk.dat"), tabk, delimiter="\t")

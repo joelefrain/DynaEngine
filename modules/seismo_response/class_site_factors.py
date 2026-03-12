@@ -98,44 +98,47 @@ class Site_Factors:
     dir_phase: str
 
     def __init__(
-            self,
-            Vs30_in_meter_per_sec: float,
-            z1_in_m: float,
-            PGA_in_g: float,
-            lenient: bool = False,
+        self,
+        Vs30_in_meter_per_sec: float,
+        z1_in_m: float,
+        PGA_in_g: float,
+        lenient: bool = False,
     ) -> None:
-        import PySeismoSoil
 
-        package_path = importlib.resources.files(PySeismoSoil)
-        self.dir_amplif = str(package_path / 'data' / 'amplification')
-        self.dir_phase = str(package_path / 'data' / 'phase')
+        import modules.seismo_response
+
+        package_path = importlib.resources.files(modules.seismo_response)
+        self.dir_amplif = str(package_path / "data" / "amplification")
+        self.dir_phase = str(package_path / "data" / "phase")
         status = Site_Factors._range_check(
             Vs30_in_meter_per_sec,
             z1_in_m,
             PGA_in_g,
         )
-        if 'Vs30 out of range' in status:
+        if "Vs30 out of range" in status:
             if not lenient:
-                raise ValueError('Vs30 should be between [175, 950] m/s')
+                raise ValueError("Vs30 should be between [175, 950] m/s")
 
             Vs30_in_meter_per_sec = 175 if Vs30_in_meter_per_sec < 175 else 950
 
-        if 'z1 out of range' in status:
+        if "z1 out of range" in status:
             if not lenient:
-                raise ValueError('z1_in_m should be between [8, 900] m')
+                raise ValueError("z1_in_m should be between [8, 900] m")
 
             z1_in_m = 8 if z1_in_m < 8 else 900
 
-        if 'PGA out of range' in status:
+        if "PGA out of range" in status:
             if not lenient:
-                raise ValueError('PGA should be between [0.01g, 1.5g]')
+                raise ValueError("PGA should be between [0.01g, 1.5g]")
 
             PGA_in_g = 0.01 if PGA_in_g < 0.01 else 1.5
 
-        if 'Invalid Vs30-z1 combination' in status:  # TODO: think about whether to add leniency
+        if (
+            "Invalid Vs30-z1 combination" in status
+        ):  # TODO: think about whether to add leniency
             raise ValueError(
-                'Vs30 and z1 combination not valid. (The `lenient` '
-                'option does not apply to this type of issue.)',
+                "Vs30 and z1 combination not valid. (The `lenient` "
+                "option does not apply to this type of issue.)",
             )
 
         self.Vs30 = Vs30_in_meter_per_sec
@@ -143,10 +146,10 @@ class Site_Factors:
         self.PGA = PGA_in_g
 
     def get_amplification(
-            self,
-            method: Literal['nl_hh', 'eq_hh'] = 'nl_hh',
-            Fourier: bool = True,
-            show_interp_plots: bool = False,
+        self,
+        method: Literal["nl_hh", "eq_hh"] = "nl_hh",
+        Fourier: bool = True,
+        show_interp_plots: bool = False,
     ) -> Frequency_Spectrum:
         """
         Get site amplification factors.
@@ -178,11 +181,11 @@ class Site_Factors:
         ValueError
             When the value of `method` is not in {'nl_hh', 'eq_hh'}
         """
-        if method not in {'nl_hh', 'eq_hh'}:
+        if method not in {"nl_hh", "eq_hh"}:
             raise ValueError("Currently, only 'nl_hh' and 'eq_hh' are valid.")
 
         period_or_freq, amplif = self._get_results(
-            'amplif',
+            "amplif",
             self.dir_amplif,
             method=method,
             Fourier=Fourier,
@@ -198,9 +201,9 @@ class Site_Factors:
         return Frequency_Spectrum(result)
 
     def get_phase_shift(
-            self,
-            method: Literal['eq_hh'] = 'eq_hh',
-            show_interp_plots: bool = False,
+        self,
+        method: Literal["eq_hh"] = "eq_hh",
+        show_interp_plots: bool = False,
     ) -> Frequency_Spectrum:
         """
         Get site amplification factors
@@ -224,11 +227,11 @@ class Site_Factors:
         ValueError
             When the value of ``method`` is not 'eq_hh'
         """
-        if method not in {'eq_hh'}:
+        if method not in {"eq_hh"}:
             raise ValueError("Currently, only 'eq_hh' is valid.")
 
         freq, phase_shift = self._get_results(
-            'phase',
+            "phase",
             self.dir_phase,
             method=method,
             Fourier=True,
@@ -237,9 +240,9 @@ class Site_Factors:
         return Frequency_Spectrum(np.column_stack((freq, phase_shift)))
 
     def get_both_amplf_and_phase(
-            self,
-            method: Literal['nl_hh', 'eq_hh'] = 'nl_hh',
-            show_interp_plots: bool = False,
+        self,
+        method: Literal["nl_hh", "eq_hh"] = "nl_hh",
+        show_interp_plots: bool = False,
     ) -> tuple[Frequency_Spectrum, Frequency_Spectrum]:
         """
         Get both amplification and phase-shift factors
@@ -264,18 +267,18 @@ class Site_Factors:
             show_interp_plots=show_interp_plots,
         )
         phase = self.get_phase_shift(
-            method='eq_hh',  # always use eq_hh
+            method="eq_hh",  # always use eq_hh
             show_interp_plots=show_interp_plots,
         )
         return amplif, phase
 
     def _get_results(
-            self,
-            amplif_or_phase: Literal['amplif', 'phase'],
-            data_dir: str,
-            method: Literal['nl_hh', 'eq_hh', 'eq_kz'] = 'nl_hh',
-            Fourier: bool = True,
-            show_interp_plots: bool = False,
+        self,
+        amplif_or_phase: Literal["amplif", "phase"],
+        data_dir: str,
+        method: Literal["nl_hh", "eq_hh", "eq_kz"] = "nl_hh",
+        Fourier: bool = True,
+        show_interp_plots: bool = False,
     ) -> tuple[np.ndarray, np.ndarray]:
         """
         Get amplification or phase results.
@@ -350,13 +353,13 @@ class Site_Factors:
 
     @staticmethod
     def _query(
-            amplif_or_phase: Literal['amplif', 'phase'],
-            Vs30: float,
-            z1: float,
-            PGA: float,
-            Fourier: bool = True,
-            method: Literal['nl_hh', 'eq_hh', 'eq_kz'] = 'nl_hh',
-            data_dir: str | None = None,
+        amplif_or_phase: Literal["amplif", "phase"],
+        Vs30: float,
+        z1: float,
+        PGA: float,
+        Fourier: bool = True,
+        method: Literal["nl_hh", "eq_hh", "eq_kz"] = "nl_hh",
+        data_dir: str | None = None,
     ) -> tuple[np.ndarray, np.ndarray]:
         """
         Query amplification or phase factors from pre-computed .csv files. The
@@ -398,34 +401,30 @@ class Site_Factors:
             When values of some input arguments are not correct
         """
         if Vs30 not in Site_Factors.Vs30_array:
-            raise ValueError(
-                '`Vs30` should be in %s.' % Site_Factors.Vs30_array
-            )
+            raise ValueError("`Vs30` should be in %s." % Site_Factors.Vs30_array)
 
         if z1 not in Site_Factors.z1_array:
-            raise ValueError('`z1` should be in %s.' % Site_Factors.z1_array)
+            raise ValueError("`z1` should be in %s." % Site_Factors.z1_array)
 
         if PGA not in Site_Factors.PGA_array:
-            raise ValueError('`PGA` should be in %s.' % Site_Factors.PGA_array)
+            raise ValueError("`PGA` should be in %s." % Site_Factors.PGA_array)
 
-        if method not in ['nl_hh', 'eq_kz', 'eq_hh']:
-            raise ValueError(
-                "`method` must be within {'nl_hh', 'eq_kz', 'eq_hh'}"
-            )
+        if method not in ["nl_hh", "eq_kz", "eq_hh"]:
+            raise ValueError("`method` must be within {'nl_hh', 'eq_kz', 'eq_hh'}")
 
-        if amplif_or_phase == 'amplif':
+        if amplif_or_phase == "amplif":
             if Fourier:
-                y_filename = '%d_%03d_af_fs_%s_avg.csv' % (Vs30, z1, method)
-                x_filename = '%d_%03d_freq.csv' % (Vs30, z1)
+                y_filename = "%d_%03d_af_fs_%s_avg.csv" % (Vs30, z1, method)
+                x_filename = "%d_%03d_freq.csv" % (Vs30, z1)
             else:  # response spectra
-                y_filename = '%d_%03d_af_rs_%s_avg.csv' % (Vs30, z1, method)
-                x_filename = '%d_%03d_period.csv' % (Vs30, z1)
+                y_filename = "%d_%03d_af_rs_%s_avg.csv" % (Vs30, z1, method)
+                x_filename = "%d_%03d_period.csv" % (Vs30, z1)
         else:  # phase shift
-            y_filename = '%d_%03d_phase_shift_%s_avg.csv' % (Vs30, z1, method)
-            x_filename = '%d_%03d_freq.csv' % (Vs30, z1)
+            y_filename = "%d_%03d_phase_shift_%s_avg.csv" % (Vs30, z1, method)
+            x_filename = "%d_%03d_freq.csv" % (Vs30, z1)
 
-        y = np.genfromtxt(os.path.join(data_dir, y_filename), delimiter=',')
-        x = np.genfromtxt(os.path.join(data_dir, x_filename), delimiter=',')
+        y = np.genfromtxt(os.path.join(data_dir, y_filename), delimiter=",")
+        x = np.genfromtxt(os.path.join(data_dir, x_filename), delimiter=",")
         PGA_index = np.argwhere(np.array(Site_Factors.PGA_array) == PGA)[0][0]
         y_values_at_given_PGA = y[PGA_index, :]
 
@@ -451,7 +450,7 @@ class Site_Factors:
 
     @staticmethod
     def _find_neighbors(
-            Vs30_in_mps: float, z1_in_m: float, PGA_in_g: float
+        Vs30_in_mps: float, z1_in_m: float, PGA_in_g: float
     ) -> tuple[tuple[int, int], tuple[int, int], tuple[int, int]]:
         """
         Find the indices of Vs30, z1, and PGA that surround the provided values.
@@ -489,9 +488,9 @@ class Site_Factors:
         """
         if value < array[0] or value > array[-1]:
             raise ValueError(
-                'You have encountered an internal bug. Please '
-                'copy the whole error message, and contact '
-                'the author of this library for help.',
+                "You have encountered an internal bug. Please "
+                "copy the whole error message, and contact "
+                "the author of this library for help.",
             )
 
         if value == array[0]:
@@ -500,15 +499,15 @@ class Site_Factors:
         if value == array[-1]:
             return len(array) - 2, len(array) - 1
 
-        i = np.searchsorted(array, value, side='left')
+        i = np.searchsorted(array, value, side="left")
         return i - 1, i
 
     @staticmethod
     def _interpolate(
-            ref_points: list[tuple[float, float, float]],
-            values: list[list[float]],
-            interp_points: tuple[float, float, float],
-            method: Literal['linear', 'nearest', 'cubic'] = 'linear',
+        ref_points: list[tuple[float, float, float]],
+        values: list[list[float]],
+        interp_points: tuple[float, float, float],
+        method: Literal["linear", "nearest", "cubic"] = "linear",
     ) -> np.ndarray:
         """
         High-dimensional interpolation.
@@ -562,23 +561,21 @@ class Site_Factors:
         n = len(values[0])
         interp_result = []
         for i in range(n):
-            res = griddata(
-                ref_points, values[:, i], interp_points, method=method
-            )
+            res = griddata(ref_points, values[:, i], interp_points, method=method)
             interp_result.append(res.flatten()[0])
 
         return np.array(interp_result)
 
     @staticmethod
     def _plot_interp(
-            ref_points: list[tuple[float, float, float]],
-            query_point: tuple[float, float, float],
-            T_or_freq: np.ndarray,
-            amps: list[np.ndarray],
-            amp_interp: np.ndarray,
-            phases: list[np.ndarray] | None = None,
-            phase_interp: np.ndarray | None = None,
-            Fourier: bool = True,
+        ref_points: list[tuple[float, float, float]],
+        query_point: tuple[float, float, float],
+        T_or_freq: np.ndarray,
+        amps: list[np.ndarray],
+        amp_interp: np.ndarray,
+        phases: list[np.ndarray] | None = None,
+        phase_interp: np.ndarray | None = None,
+        Fourier: bool = True,
     ) -> tuple[Figure, Axes, Axes | None]:
         """
         Show a plot of the amplification and/or phase shift factors at the
@@ -632,7 +629,7 @@ class Site_Factors:
             ax = plt.axes()
 
         for j, ref_point in enumerate(ref_points):
-            label = '%d m/s, %d m, %.2gg' % ref_point
+            label = "%d m/s, %d m, %.2gg" % ref_point
             if phase_flag:
                 ax1.semilogx(T_or_freq, amps[j], alpha=alpha)
                 ax2.semilogx(T_or_freq, phases[j], alpha=alpha, label=label)
@@ -640,40 +637,32 @@ class Site_Factors:
                 ax.semilogx(T_or_freq, amps[j], alpha=alpha, label=label)
 
         if phase_flag:
-            ax1.semilogx(T_or_freq, amp_interp, 'k--', lw=2.5)
-            ax1.grid(ls=':')
-            ax1.set_xlabel('Frequency [Hz]')
-            ax1.set_ylabel('Amplification')
+            ax1.semilogx(T_or_freq, amp_interp, "k--", lw=2.5)
+            ax1.grid(ls=":")
+            ax1.set_xlabel("Frequency [Hz]")
+            ax1.set_ylabel("Amplification")
 
-            ax2.plot(
-                T_or_freq, phase_interp, 'k--', lw=2.5, label='Interpolated'
-            )
-            ax2.grid(ls=':')
-            ax2.set_xlabel('Frequency [Hz]')
-            ax2.set_ylabel('Phase shift')
+            ax2.plot(T_or_freq, phase_interp, "k--", lw=2.5, label="Interpolated")
+            ax2.grid(ls=":")
+            ax2.set_xlabel("Frequency [Hz]")
+            ax2.set_ylabel("Phase shift")
         else:
-            ax.semilogx(
-                T_or_freq, amp_interp, 'k--', lw=2.5, label='Interpolated'
-            )
-            ax.grid(ls=':')
+            ax.semilogx(T_or_freq, amp_interp, "k--", lw=2.5, label="Interpolated")
+            ax.grid(ls=":")
             if Fourier:
-                ax.set_xlabel('Frequency [Hz]')
+                ax.set_xlabel("Frequency [Hz]")
             else:
-                ax.set_xlabel('Period [sec]')
+                ax.set_xlabel("Period [sec]")
 
-            ax.set_ylabel('Amplification or phase shift')
+            ax.set_ylabel("Amplification or phase shift")
 
         if phase_flag:
-            fig.tight_layout(
-                pad=0.3, h_pad=0.3, w_pad=0.3, rect=[0, 0.03, 1, 0.94]
-            )
+            fig.tight_layout(pad=0.3, h_pad=0.3, w_pad=0.3, rect=[0, 0.03, 1, 0.94])
 
-        fig.suptitle(
-            '$V_{S30}$ = %d m/s, $z_1$ = %d m, PGA = %.2g$g$' % query_point
-        )
+        fig.suptitle("$V_{S30}$ = %d m/s, $z_1$ = %d m, PGA = %.2g$g$" % query_point)
 
         bbox_anchor_loc = (1.0, 0.02, 1.0, 1.02)
-        plt.legend(bbox_to_anchor=bbox_anchor_loc, loc='center left')
+        plt.legend(bbox_to_anchor=bbox_anchor_loc, loc="center left")
 
         if phase_flag:
             return fig, ax1, ax2
@@ -682,9 +671,9 @@ class Site_Factors:
 
     @staticmethod
     def _range_check(
-            Vs30_in_mps: float,
-            z1_in_m: float,
-            PGA_in_g: float,
+        Vs30_in_mps: float,
+        z1_in_m: float,
+        PGA_in_g: float,
     ) -> list[str]:
         """
         Check if the provided Vs30, z1_in_m, and PGA_in_g values are within
@@ -694,41 +683,41 @@ class Site_Factors:
         associated with the given input parameters.
         """
         if not isinstance(Vs30_in_mps, (float, int, np.number)):
-            raise TypeError('Vs30 must be int, float, or numpy.number.')
+            raise TypeError("Vs30 must be int, float, or numpy.number.")
 
         if not isinstance(z1_in_m, (float, int, np.number)):
-            raise TypeError('z1_in_m must be int, float, or numpy.number.')
+            raise TypeError("z1_in_m must be int, float, or numpy.number.")
 
         if not isinstance(PGA_in_g, (float, int, np.number)):
-            raise TypeError('PGA_in_g must be int, float, or numpy.number.')
+            raise TypeError("PGA_in_g must be int, float, or numpy.number.")
 
         status = []
 
         if Vs30_in_mps < 175 or Vs30_in_mps > 950:
-            status.append('Vs30 out of range')
+            status.append("Vs30 out of range")
 
         if z1_in_m < 8 or z1_in_m > 900:
-            status.append('z1 out of range')
+            status.append("z1 out of range")
 
         if PGA_in_g < 0.01 or PGA_in_g > 1.5:
-            status.append('PGA out of range')
+            status.append("PGA out of range")
 
         if Vs30_in_mps > 400 and z1_in_m > 750:
-            status.append('Invalid Vs30-z1 combination')
+            status.append("Invalid Vs30-z1 combination")
         elif Vs30_in_mps > 450 and z1_in_m > 600:
-            status.append('Invalid Vs30-z1 combination')
+            status.append("Invalid Vs30-z1 combination")
         elif Vs30_in_mps > 550 and z1_in_m > 450:
-            status.append('Invalid Vs30-z1 combination')
+            status.append("Invalid Vs30-z1 combination")
         elif Vs30_in_mps > 600 and z1_in_m > 300:
-            status.append('Invalid Vs30-z1 combination')
+            status.append("Invalid Vs30-z1 combination")
         elif Vs30_in_mps > 650 and z1_in_m > 150:
-            status.append('Invalid Vs30-z1 combination')
+            status.append("Invalid Vs30-z1 combination")
         elif Vs30_in_mps > 750 and z1_in_m > 75:
-            status.append('Invalid Vs30-z1 combination')
+            status.append("Invalid Vs30-z1 combination")
         elif Vs30_in_mps > 800 and z1_in_m > 36:
-            status.append('Invalid Vs30-z1 combination')
+            status.append("Invalid Vs30-z1 combination")
         elif Vs30_in_mps > 850 and z1_in_m > 16:
-            status.append('Invalid Vs30-z1 combination')
+            status.append("Invalid Vs30-z1 combination")
         else:
             pass
 

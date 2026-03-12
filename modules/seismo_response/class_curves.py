@@ -76,20 +76,18 @@ class Curve:
     values: np.ndarray
 
     def __init__(
-            self,
-            data: np.ndarray,
-            *,
-            strain_unit: Literal['1', '%'] = '%',
-            interpolate: bool = False,
-            min_strain: float = 0.0001,
-            max_strain: float = 10.0,
-            n_pts: int = 50,
-            log_scale: bool = True,
-            check_values: bool = True,
+        self,
+        data: np.ndarray,
+        *,
+        strain_unit: Literal["1", "%"] = "%",
+        interpolate: bool = False,
+        min_strain: float = 0.0001,
+        max_strain: float = 10.0,
+        n_pts: int = 50,
+        log_scale: bool = True,
+        check_values: bool = True,
     ) -> None:
-        hlp.check_two_column_format(
-            data, '`curve`', ensure_non_negative=check_values
-        )
+        hlp.check_two_column_format(data, "`curve`", ensure_non_negative=check_values)
 
         if interpolate:
             strain, values = hlp.interpolate(
@@ -103,10 +101,10 @@ class Curve:
         else:
             strain, values = data[:, 0], data[:, 1]
 
-        if strain_unit not in ['1', '%']:
+        if strain_unit not in ["1", "%"]:
             raise ValueError("`strain_unit` must be '1' or '%'.")
 
-        if strain_unit == '1':
+        if strain_unit == "1":
             strain *= 100  # strain values are internally stored in unit of %
 
         self.raw_data = data
@@ -114,19 +112,19 @@ class Curve:
         self.values = values
 
     def __repr__(self) -> str:
-        return '{} object:\n{}'.format(self.__class__, str(self.raw_data))
+        return "{} object:\n{}".format(self.__class__, str(self.raw_data))
 
     def plot(
-            self,
-            plot_interpolated: bool = True,
-            fig: Figure | None = None,
-            ax: Axes | None = None,
-            title: str | None = None,
-            xlabel: str | None = 'Strain [%]',
-            ylabel: str | None = None,
-            figsize: tuple[float, float] = (3, 3),
-            dpi: float = 100,
-            **kwargs_to_matplotlib: dict[Any, Any],
+        self,
+        plot_interpolated: bool = True,
+        fig: Figure | None = None,
+        ax: Axes | None = None,
+        title: str | None = None,
+        xlabel: str | None = "Strain [%]",
+        ylabel: str | None = None,
+        figsize: tuple[float, float] = (3, 3),
+        dpi: float = 100,
+        **kwargs_to_matplotlib: dict[Any, Any],
     ) -> tuple[Figure, Axes]:
         """
         Plot the curve (y axis: values, x axis: strain)
@@ -161,9 +159,7 @@ class Curve:
         ax : Axes
             The axes object being created or being passed into this function.
         """
-        fig, ax = hlp._process_fig_ax_objects(
-            fig, ax, figsize=figsize, dpi=dpi
-        )
+        fig, ax = hlp._process_fig_ax_objects(fig, ax, figsize=figsize, dpi=dpi)
         if plot_interpolated:
             ax.semilogx(self.strain, self.values, **kwargs_to_matplotlib)
         else:
@@ -173,7 +169,7 @@ class Curve:
                 **kwargs_to_matplotlib,
             )
 
-        ax.grid(ls=':')
+        ax.grid(ls=":")
         ax.set_xlabel(xlabel)
         if ylabel:
             ax.set_ylabel(ylabel)
@@ -241,16 +237,16 @@ class GGmax_Curve(Curve):
     GGmax: np.ndarray
 
     def __init__(
-            self,
-            data: np.ndarray,
-            *,
-            strain_unit: Literal['1', '%'] = '%',
-            interpolate: bool = False,
-            min_strain: float = 0.0001,
-            max_strain: float = 10.0,
-            n_pts: int = 50,
-            log_scale: bool = True,
-            check_values: bool = True,
+        self,
+        data: np.ndarray,
+        *,
+        strain_unit: Literal["1", "%"] = "%",
+        interpolate: bool = False,
+        min_strain: float = 0.0001,
+        max_strain: float = 10.0,
+        n_pts: int = 50,
+        log_scale: bool = True,
+        check_values: bool = True,
     ):
         super().__init__(
             data,
@@ -265,9 +261,7 @@ class GGmax_Curve(Curve):
         self.GGmax = self.values
 
         if check_values and (np.any(self.GGmax > 1) or np.any(self.GGmax < 0)):
-            raise ValueError(
-                'The provided G/Gmax values must be between [0, 1].'
-            )
+            raise ValueError("The provided G/Gmax values must be between [0, 1].")
 
 
 class Damping_Curve(Curve):
@@ -330,17 +324,17 @@ class Damping_Curve(Curve):
     damping: np.ndarray
 
     def __init__(
-            self,
-            data: np.ndarray,
-            *,
-            strain_unit: Literal['1', '%'] = '%',
-            damping_unit: Literal['1', '%'] = '%',
-            interpolate: bool = False,
-            min_strain: float = 0.0001,
-            max_strain: float = 10.0,
-            n_pts: int = 50,
-            log_scale: bool = True,
-            check_values: bool = True,
+        self,
+        data: np.ndarray,
+        *,
+        strain_unit: Literal["1", "%"] = "%",
+        damping_unit: Literal["1", "%"] = "%",
+        interpolate: bool = False,
+        min_strain: float = 0.0001,
+        max_strain: float = 10.0,
+        n_pts: int = 50,
+        log_scale: bool = True,
+        check_values: bool = True,
     ) -> None:
         super().__init__(
             data,
@@ -354,10 +348,10 @@ class Damping_Curve(Curve):
         )
         self.damping = self.values
 
-        if damping_unit not in ['1', '%']:
+        if damping_unit not in ["1", "%"]:
             raise ValueError("`damping_unit` must be '1' or '%'.")
 
-        if damping_unit == '1':
+        if damping_unit == "1":
             self.damping *= 100  # unit: 1 --> %
 
         # if check_values and (
@@ -368,19 +362,19 @@ class Damping_Curve(Curve):
         #     )
 
     def get_HH_x_param(
-            self,
-            use_scipy: bool = True,
-            pop_size: int = 800,
-            n_gen: int = 100,
-            lower_bound_power: float = -4,
-            upper_bound_power: float = 6,
-            eta: float = 0.1,
-            seed: float = 0,
-            show_fig: bool = False,
-            verbose: bool = False,
-            parallel: bool = False,
-            n_cores: int | None = None,
-    ) -> 'HH_Param':
+        self,
+        use_scipy: bool = True,
+        pop_size: int = 800,
+        n_gen: int = 100,
+        lower_bound_power: float = -4,
+        upper_bound_power: float = 6,
+        eta: float = 0.1,
+        seed: float = 0,
+        show_fig: bool = False,
+        verbose: bool = False,
+        parallel: bool = False,
+        n_cores: int | None = None,
+    ) -> "HH_Param":
         """
         Obtain the HH_x parameters from the damping curve data, using the
         genetic algorithm provided in DEAP.
@@ -450,18 +444,18 @@ class Damping_Curve(Curve):
         return self.HH_x_param
 
     def get_H4_x_param(
-            self,
-            use_scipy: bool = True,
-            pop_size: int = 800,
-            n_gen: int = 100,
-            lower_bound_power: float = -4,
-            upper_bound_power: float = 6,
-            eta: float = 0.1,
-            seed: float = 0,
-            show_fig: bool = False,
-            verbose: bool = False,
-            parallel: bool = False,
-            n_cores: int | None = None,
+        self,
+        use_scipy: bool = True,
+        pop_size: int = 800,
+        n_gen: int = 100,
+        lower_bound_power: float = -4,
+        upper_bound_power: float = 6,
+        eta: float = 0.1,
+        seed: float = 0,
+        show_fig: bool = False,
+        verbose: bool = False,
+        parallel: bool = False,
+        n_cores: int | None = None,
     ) -> MKZ_Param:
         """
         Obtain the HH_x parameters from the damping curve data, using the
@@ -582,16 +576,16 @@ class Stress_Curve(Curve):
     stress: np.ndarray
 
     def __init__(
-            self,
-            data: np.ndarray,
-            *,
-            strain_unit: Literal['1', '%'] = '1',
-            stress_unit: Literal['Pa', 'kPa', 'MPa', 'GPa'] = 'kPa',
-            min_strain: float = 0.0001,
-            max_strain: float = 10.0,
-            n_pts: int = 50,
-            log_scale: bool = True,
-            check_values: bool = True,
+        self,
+        data: np.ndarray,
+        *,
+        strain_unit: Literal["1", "%"] = "1",
+        stress_unit: Literal["Pa", "kPa", "MPa", "GPa"] = "kPa",
+        min_strain: float = 0.0001,
+        max_strain: float = 10.0,
+        n_pts: int = 50,
+        log_scale: bool = True,
+        check_values: bool = True,
     ) -> None:
         super().__init__(
             data,
@@ -604,16 +598,14 @@ class Stress_Curve(Curve):
         )
         self.stress = self.values
 
-        if stress_unit not in ['Pa', 'kPa', 'MPa', 'GPa']:
-            raise ValueError(
-                "`stress_unit` must be {'Pa', 'kPa', 'MPa', 'GPa'}."
-            )
+        if stress_unit not in ["Pa", "kPa", "MPa", "GPa"]:
+            raise ValueError("`stress_unit` must be {'Pa', 'kPa', 'MPa', 'GPa'}.")
 
-        if stress_unit == 'Pa':
+        if stress_unit == "Pa":
             self.stress /= 1e3
-        elif stress_unit == 'kPa':
+        elif stress_unit == "kPa":
             pass
-        elif stress_unit == 'MPa':
+        elif stress_unit == "MPa":
             self.stress *= 1e3
         else:  # GPa
             self.stress *= 1e6
@@ -664,10 +656,10 @@ class Multiple_Curves:
     n_layer: int
 
     def __init__(
-            self,
-            list_of_curves: list[np.ndarray] | list[Curve],
-            *,
-            element_class: Type[Curve] = Curve,
+        self,
+        list_of_curves: list[np.ndarray] | list[Curve],
+        *,
+        element_class: Type[Curve] = Curve,
     ) -> None:
         curves = []
         for curve in list_of_curves:
@@ -676,16 +668,14 @@ class Multiple_Curves:
             elif isinstance(curve, element_class):
                 curves.append(curve)
             else:
-                raise TypeError(
-                    'An element in `list_of_curves` has invalid type.'
-                )
+                raise TypeError("An element in `list_of_curves` has invalid type.")
 
         self.element_class = element_class
         self.curves = curves
         self.n_layer = len(curves)
 
     def __repr__(self) -> str:
-        return 'n_layers = %d, type: %s' % (self.n_layer, type(self.curves[0]))
+        return "n_layers = %d, type: %s" % (self.n_layer, type(self.curves[0]))
 
     def __contains__(self, item) -> bool:
         return item in self.curves
@@ -695,9 +685,7 @@ class Multiple_Curves:
 
     def __setitem__(self, i, item) -> None:
         if not isinstance(item, self.element_class):
-            raise TypeError(
-                'The new `item` must be of type %s.' % self.element_class
-            )
+            raise TypeError("The new `item` must be of type %s." % self.element_class)
 
         self.curves[i] = item
 
@@ -708,7 +696,7 @@ class Multiple_Curves:
         if isinstance(i, slice):  # return an object of the same class
             return self.__class__(self.curves[i])  # filled with the sliced data
 
-        raise TypeError('Indices must be integers or slices, not %s' % type(i))
+        raise TypeError("Indices must be integers or slices, not %s" % type(i))
 
     def __delitem__(self, i) -> None:
         del self.curves[i]
@@ -717,24 +705,22 @@ class Multiple_Curves:
     def append(self, item) -> None:
         """Append another curve item to the curves."""
         if not isinstance(item, self.element_class):
-            raise TypeError(
-                'The new `item` must be of type %s.' % self.element_class
-            )
+            raise TypeError("The new `item` must be of type %s." % self.element_class)
 
         self.curves.append(item)
         self.n_layer += 1
 
     def plot(
-            self,
-            plot_interpolated: bool = True,
-            fig: Figure | None = None,
-            ax: Axes | None = None,
-            title: str | None = None,
-            xlabel: str | None = 'Strain [%]',
-            ylabel: str | None = None,
-            figsize: tuple[float, float] = (3, 3),
-            dpi: float = 100,
-            **kwargs_to_matplotlib: dict[Any, Any],
+        self,
+        plot_interpolated: bool = True,
+        fig: Figure | None = None,
+        ax: Axes | None = None,
+        title: str | None = None,
+        xlabel: str | None = "Strain [%]",
+        ylabel: str | None = None,
+        figsize: tuple[float, float] = (3, 3),
+        dpi: float = 100,
+        **kwargs_to_matplotlib: dict[Any, Any],
     ) -> tuple[Figure, Axes]:
         """
         Plot multiple curves together on one figure.
@@ -772,13 +758,9 @@ class Multiple_Curves:
             The axes object being created or being passed into this function.
         """
         if fig is None:  # User provided ax but not fig, or user provided neither
-            fig, ax = hlp._process_fig_ax_objects(
-                fig, None, figsize=figsize, dpi=dpi
-            )
+            fig, ax = hlp._process_fig_ax_objects(fig, None, figsize=figsize, dpi=dpi)
         elif fig is not None and ax is None:  # User provided fig but not ax
-            fig, ax = hlp._process_fig_ax_objects(
-                fig, ax, figsize=figsize, dpi=dpi
-            )
+            fig, ax = hlp._process_fig_ax_objects(fig, ax, figsize=figsize, dpi=dpi)
 
         for curve in self.curves:
             curve.plot(
@@ -838,10 +820,10 @@ class Multiple_Damping_Curves(Multiple_Curves):
     n_layer: int
 
     def __init__(
-            self,
-            filename_or_list_of_curves: str | list[np.ndarray],
-            *,
-            sep: str = '\t',
+        self,
+        filename_or_list_of_curves: str | list[np.ndarray],
+        *,
+        sep: str = "\t",
     ) -> None:
         if isinstance(filename_or_list_of_curves, str):  # file name
             curves = np.genfromtxt(filename_or_list_of_curves, delimiter=sep)
@@ -851,9 +833,7 @@ class Multiple_Damping_Curves(Multiple_Curves):
             list_of_damping_curves = filename_or_list_of_curves
             self._filename = None
         else:
-            raise TypeError(
-                'Unrecognized type for `filename_or_list_of_curves`.'
-            )
+            raise TypeError("Unrecognized type for `filename_or_list_of_curves`.")
 
         self._sep = sep
 
@@ -863,16 +843,16 @@ class Multiple_Damping_Curves(Multiple_Curves):
         )
 
     def plot(
-            self,
-            plot_interpolated: bool = True,
-            fig: Figure | None = None,
-            ax: Axes | None = None,
-            title: str | None = None,
-            xlabel: str | None = 'Strain [%]',
-            ylabel: str | None = 'Damping [%]',
-            figsize: tuple[float, float] = (3, 3),
-            dpi: float = 100,
-            **kwargs_to_matplotlib: dict[Any, Any],
+        self,
+        plot_interpolated: bool = True,
+        fig: Figure | None = None,
+        ax: Axes | None = None,
+        title: str | None = None,
+        xlabel: str | None = "Strain [%]",
+        ylabel: str | None = "Damping [%]",
+        figsize: tuple[float, float] = (3, 3),
+        dpi: float = 100,
+        **kwargs_to_matplotlib: dict[Any, Any],
     ) -> tuple[Figure, Axes]:
         """
         Plot multiple curves together on one figure.
@@ -922,10 +902,10 @@ class Multiple_Damping_Curves(Multiple_Curves):
         return fig, ax
 
     def get_curve_matrix(
-            self,
-            GGmax_filler_value: float = 1.0,
-            save_to_file: bool = False,
-            full_file_name: str | None = None,
+        self,
+        GGmax_filler_value: float = 1.0,
+        save_to_file: bool = False,
+        full_file_name: str | None = None,
     ) -> np.ndarray:
         """
         Produce a full "curve matrix" based on the damping data defined in
@@ -969,9 +949,7 @@ class Multiple_Damping_Curves(Multiple_Curves):
                 strain_ = strain  # we can use the original strain array
                 damping_ = curve_.damping
             else:  # otherwise we need a new strain array to match `max_length`
-                strain_ = np.geomspace(
-                    np.min(strain), np.max(strain), max_length
-                )
+                strain_ = np.geomspace(np.min(strain), np.max(strain), max_length)
                 damping_ = np.interp(strain_, strain, curve_.damping)
             # END IF
             GGmax = np.ones_like(strain_) * GGmax_filler_value
@@ -985,24 +963,24 @@ class Multiple_Damping_Curves(Multiple_Curves):
         return curve_matrix
 
     def get_all_HH_x_params(
-            self,
-            use_scipy: bool = True,
-            pop_size: int = 800,
-            n_gen: int = 100,
-            lower_bound_power: float = -4,
-            upper_bound_power: float = 6,
-            eta: float = 0.1,
-            seed: float = 0,
-            show_fig: bool = False,
-            verbose: bool = False,
-            parallel: bool = False,
-            n_cores: int | None = None,
-            save_txt: bool = False,
-            txt_filename: str | None = None,
-            sep: str | None = None,
-            save_fig: bool = False,
-            fig_filename: str | None = None,
-            dpi: float = 100,
+        self,
+        use_scipy: bool = True,
+        pop_size: int = 800,
+        n_gen: int = 100,
+        lower_bound_power: float = -4,
+        upper_bound_power: float = 6,
+        eta: float = 0.1,
+        seed: float = 0,
+        show_fig: bool = False,
+        verbose: bool = False,
+        parallel: bool = False,
+        n_cores: int | None = None,
+        save_txt: bool = False,
+        txt_filename: str | None = None,
+        sep: str | None = None,
+        save_fig: bool = False,
+        fig_filename: str | None = None,
+        dpi: float = 100,
     ) -> HH_Param_Multi_Layer:
         """
         Obtain the HH_x parameters from the damping curve data (for all the
@@ -1066,11 +1044,11 @@ class Multiple_Damping_Curves(Multiple_Curves):
             The best parameters for each soil layer found in the optimization.
         """
         if save_fig and fig_filename is None:
-            fig_filename = self._produce_output_file_name('HH', 'png')
+            fig_filename = self._produce_output_file_name("HH", "png")
 
         if save_txt:
             if txt_filename is None:
-                txt_filename = self._produce_output_file_name('HH', 'txt')
+                txt_filename = self._produce_output_file_name("HH", "txt")
 
             if sep is None:
                 sep = self._sep
@@ -1103,24 +1081,24 @@ class Multiple_Damping_Curves(Multiple_Curves):
         return HH_Param_Multi_Layer(params)
 
     def get_all_H4_x_params(
-            self,
-            use_scipy: bool = True,
-            pop_size: int = 800,
-            n_gen: int = 100,
-            lower_bound_power: float = -4,
-            upper_bound_power: float = 6,
-            eta: float = 0.1,
-            seed: float = 0,
-            show_fig: bool = False,
-            verbose: bool = False,
-            parallel: bool = False,
-            n_cores: int | None = None,
-            save_txt: bool = False,
-            txt_filename: str | None = None,
-            sep: str | None = None,
-            save_fig: bool = False,
-            fig_filename: str | None = None,
-            dpi: float = 100,
+        self,
+        use_scipy: bool = True,
+        pop_size: int = 800,
+        n_gen: int = 100,
+        lower_bound_power: float = -4,
+        upper_bound_power: float = 6,
+        eta: float = 0.1,
+        seed: float = 0,
+        show_fig: bool = False,
+        verbose: bool = False,
+        parallel: bool = False,
+        n_cores: int | None = None,
+        save_txt: bool = False,
+        txt_filename: str | None = None,
+        sep: str | None = None,
+        save_fig: bool = False,
+        fig_filename: str | None = None,
+        dpi: float = 100,
     ) -> MKZ_Param_Multi_Layer:
         """
         Obtain the H4_x parameters from the damping curve data (for all the
@@ -1184,11 +1162,11 @@ class Multiple_Damping_Curves(Multiple_Curves):
             The best parameters for each soil layer found in the optimization.
         """
         if save_fig and fig_filename is None:
-            fig_filename = self._produce_output_file_name('H4', 'png')
+            fig_filename = self._produce_output_file_name("H4", "png")
 
         if save_txt:
             if txt_filename is None:
-                txt_filename = self._produce_output_file_name('H4', 'txt')
+                txt_filename = self._produce_output_file_name("H4", "txt")
 
             if sep is None:
                 sep = self._sep
@@ -1221,9 +1199,9 @@ class Multiple_Damping_Curves(Multiple_Curves):
         return MKZ_Param_Multi_Layer(params)
 
     def _produce_output_file_name(
-            self,
-            prefix: Literal['HH', 'H4'],
-            extension: Literal['png', 'txt'],
+        self,
+        prefix: Literal["HH", "H4"],
+        extension: Literal["png", "txt"],
     ) -> str:
         """
         Produce the output file name.
@@ -1247,19 +1225,19 @@ class Multiple_Damping_Curves(Multiple_Curves):
         """
         if self._filename is None:
             raise ValueError(
-                'Please make sure to create this object from '
-                'a text file, so that there is an original file '
-                'name to work with.',
+                "Please make sure to create this object from "
+                "a text file, so that there is an original file "
+                "name to work with.",
             )
 
         path_name, file_name = os.path.split(self._filename)
         file_name_, _ = os.path.splitext(file_name)
-        if 'curve_' in file_name_:
+        if "curve_" in file_name_:
             site_name = file_name_[6:]
         else:
             site_name = file_name_
 
-        new_file_name = '{}_x_{}.{}'.format(prefix, site_name, extension)
+        new_file_name = "{}_x_{}.{}".format(prefix, site_name, extension)
 
         return new_file_name
 
@@ -1307,10 +1285,10 @@ class Multiple_GGmax_Curves(Multiple_Curves):
     n_layer: int
 
     def __init__(
-            self,
-            filename_or_list_of_curves: str | list[np.ndarray],
-            *,
-            sep: str = '\t',
+        self,
+        filename_or_list_of_curves: str | list[np.ndarray],
+        *,
+        sep: str = "\t",
     ) -> None:
         if isinstance(filename_or_list_of_curves, str):  # file name
             curves = np.genfromtxt(filename_or_list_of_curves, delimiter=sep)
@@ -1320,9 +1298,7 @@ class Multiple_GGmax_Curves(Multiple_Curves):
             list_of_GGmax_curves = filename_or_list_of_curves
             self._filename = None
         else:
-            raise TypeError(
-                'Unrecognized type for `filename_or_list_of_curves`.'
-            )
+            raise TypeError("Unrecognized type for `filename_or_list_of_curves`.")
 
         self._sep = sep
 
@@ -1332,16 +1308,16 @@ class Multiple_GGmax_Curves(Multiple_Curves):
         )
 
     def plot(
-            self,
-            plot_interpolated: bool = True,
-            fig: Figure | None = None,
-            ax: Axes | None = None,
-            title: str | None = None,
-            xlabel: str | None = 'Strain [%]',
-            ylabel: str | None = 'G/Gmax',
-            figsize: tuple[float, float] = (3, 3),
-            dpi: float = 100,
-            **kwargs_to_matplotlib: dict[Any, Any],
+        self,
+        plot_interpolated: bool = True,
+        fig: Figure | None = None,
+        ax: Axes | None = None,
+        title: str | None = None,
+        xlabel: str | None = "Strain [%]",
+        ylabel: str | None = "G/Gmax",
+        figsize: tuple[float, float] = (3, 3),
+        dpi: float = 100,
+        **kwargs_to_matplotlib: dict[Any, Any],
     ) -> tuple[Figure, Axes]:
         """
         Plot multiple curves together on one figure.
@@ -1391,10 +1367,10 @@ class Multiple_GGmax_Curves(Multiple_Curves):
         return fig, ax
 
     def get_curve_matrix(
-            self,
-            damping_filler_value: float = 1.0,
-            save_to_file: bool = False,
-            full_file_name: str | None = None,
+        self,
+        damping_filler_value: float = 1.0,
+        save_to_file: bool = False,
+        full_file_name: str | None = None,
     ) -> np.ndarray:
         """
         Produce a full "curve matrix" based on the G/Gmax data defined in
@@ -1438,9 +1414,7 @@ class Multiple_GGmax_Curves(Multiple_Curves):
                 strain_ = strain  # we can use the original strain array
                 GGmax_ = curve_.GGmax
             else:  # otherwise we need a new strain array to match `max_length`
-                strain_ = np.geomspace(
-                    np.min(strain), np.max(strain), max_length
-                )
+                strain_ = np.geomspace(np.min(strain), np.max(strain), max_length)
                 GGmax_ = np.interp(strain_, strain, curve_.GGmax)
             # END IF
             damping = np.ones_like(strain_) * damping_filler_value
@@ -1507,41 +1481,41 @@ class Multiple_GGmax_Damping_Curves:
     n_layer: int
 
     def __init__(
-            self,
-            *,
-            mgc_and_mdc: tuple[Multiple_GGmax_Curves, Multiple_Damping_Curves]
-            | None = None,
-            data: np.ndarray | str | None = None,
+        self,
+        *,
+        mgc_and_mdc: tuple[Multiple_GGmax_Curves, Multiple_Damping_Curves]
+        | None = None,
+        data: np.ndarray | str | None = None,
     ) -> None:
         if mgc_and_mdc is None and data is None:
             raise ValueError(
-                'Both parameters are `None`. Please provide '
-                'one and only one input parameter.',
+                "Both parameters are `None`. Please provide "
+                "one and only one input parameter.",
             )
 
         if mgc_and_mdc is not None and data is not None:
             raise ValueError(
-                'Both parameters are not `None`. Please provide '
-                'one and only one input parameter.',
+                "Both parameters are not `None`. Please provide "
+                "one and only one input parameter.",
             )
 
         if mgc_and_mdc is not None:
             if not isinstance(mgc_and_mdc, tuple):
-                raise TypeError('`mgc_and_mdc` needs to be a tuple.')
+                raise TypeError("`mgc_and_mdc` needs to be a tuple.")
 
             if len(mgc_and_mdc) != 2:
-                raise ValueError('Length of `mgc_and_mdc` needs to be 2.')
+                raise ValueError("Length of `mgc_and_mdc` needs to be 2.")
 
             if not isinstance(mgc_and_mdc[0], Multiple_GGmax_Curves):
                 raise TypeError(
-                    'The 0th element of `mgc_and_mdc` needs to '
-                    'be of type `Multiple_GGmax_Curves`.',
+                    "The 0th element of `mgc_and_mdc` needs to "
+                    "be of type `Multiple_GGmax_Curves`.",
                 )
 
             if not isinstance(mgc_and_mdc[-1], Multiple_Damping_Curves):
                 raise TypeError(
-                    'The last element of `mgc_and_mdc` needs to '
-                    'be of type `Multiple_Damping_Curves`.',
+                    "The last element of `mgc_and_mdc` needs to "
+                    "be of type `Multiple_Damping_Curves`.",
                 )
 
             self.mgc = mgc_and_mdc[0]
@@ -1549,36 +1523,34 @@ class Multiple_GGmax_Damping_Curves:
             self.data = None
             if self.mgc.n_layer != self.mdc.n_layer:
                 raise ValueError(
-                    'The ``Multiple_GGmax_Curves`` instance and '
-                    'the ``Multiple_Damping_Curves`` instance '
-                    'need to have the same number of soil layers.',
+                    "The ``Multiple_GGmax_Curves`` instance and "
+                    "the ``Multiple_Damping_Curves`` instance "
+                    "need to have the same number of soil layers.",
                 )
 
             self.n_layer = self.mgc.n_layer
         else:  # `data` is not `None`
             if not isinstance(data, (np.ndarray, str)):
-                raise TypeError(
-                    '`data` must be a 2D numpy array or a file name.'
-                )
+                raise TypeError("`data` must be a 2D numpy array or a file name.")
 
             if isinstance(data, str):
                 data = np.genfromtxt(data)
 
             self.mgc = None
             self.mdc = None
-            hlp.assert_2D_numpy_array(data, name='`data`')
+            hlp.assert_2D_numpy_array(data, name="`data`")
             if data.shape[1] % 4 != 0:
                 raise ValueError(
-                    'The number of columns of `data` needs '
-                    'to be a multiple of 4. However, your '
-                    '`data` has %d columns.' % data.shape[1],
+                    "The number of columns of `data` needs "
+                    "to be a multiple of 4. However, your "
+                    "`data` has %d columns." % data.shape[1],
                 )
 
             self.data = data
             self.n_layer = data.shape[1] // 4
 
     def get_MGC_MDC_objects(
-            self,
+        self,
     ) -> tuple[Multiple_GGmax_Curves, Multiple_Damping_Curves]:
         """
         Get ``Multiple_GGmax_Curves`` and ``Multiple_Damping_Curves`` objects.
@@ -1626,5 +1598,5 @@ class Multiple_GGmax_Damping_Curves:
     def plot(self) -> None:
         """Plot the G/Gmax and damping curves."""
         mgc, mdc = self.get_MGC_MDC_objects()
-        mgc.plot(ylabel=r'$G/G_{\max}$')
-        mdc.plot(ylabel='Damping [%]')
+        mgc.plot(ylabel=r"$G/G_{\max}$")
+        mdc.plot(ylabel="Damping [%]")

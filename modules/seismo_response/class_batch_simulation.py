@@ -51,21 +51,19 @@ class Batch_Simulation:
     list_of_simulations: list[Simulation_Results]
     n_simulations: int
     sim_type: Literal[
-        'Linear_Simulation', 'Equiv_Linear_Simulation', 'Nonlinear_Simulation'
+        "Linear_Simulation", "Equiv_Linear_Simulation", "Nonlinear_Simulation"
     ]
 
     def __init__(
-            self,
-            list_of_simulations: list[Simulation_Results],
-            use_ctx: bool = False,
+        self,
+        list_of_simulations: list[Simulation_Results],
+        use_ctx: bool = False,
     ) -> None:
         if not isinstance(list_of_simulations, list):
-            raise TypeError('`list_of_simulations` should be a list.')
+            raise TypeError("`list_of_simulations` should be a list.")
 
         if len(list_of_simulations) == 0:
-            raise ValueError(
-                '`list_of_simulations` should have at least one element.'
-            )
+            raise ValueError("`list_of_simulations` should have at least one element.")
 
         sim_0 = list_of_simulations[0]
         if not isinstance(
@@ -73,14 +71,14 @@ class Batch_Simulation:
             (Linear_Simulation, Equiv_Linear_Simulation, Nonlinear_Simulation),
         ):
             raise TypeError(
-                'Elements of `list_of_simulations` should be of '
-                'type `Linear_Simulation`, `Equiv_Linear_Simulation`, '
-                'or `Nonlinear_Simulation`.',
+                "Elements of `list_of_simulations` should be of "
+                "type `Linear_Simulation`, `Equiv_Linear_Simulation`, "
+                "or `Nonlinear_Simulation`.",
             )
 
         if not all(isinstance(i, type(sim_0)) for i in list_of_simulations):
             raise TypeError(
-                'All the elements of `list_of_simulations` should be of the same type.',
+                "All the elements of `list_of_simulations` should be of the same type.",
             )
 
         n_simulations = len(list_of_simulations)
@@ -91,22 +89,24 @@ class Batch_Simulation:
 
         self.use_ctx = use_ctx
         if use_ctx:
-            self.ctx = mp.get_context('forkserver')
-            self.ctx.set_forkserver_preload([
-                'PySeismoSoil.class_Vs_profile',
-                'PySeismoSoil.class_ground_motion',
-                'PySeismoSoil.class_simulation',
-                'PySeismoSoil.class_batch_simulation',
-            ])
+            self.ctx = mp.get_context("forkserver")
+            self.ctx.set_forkserver_preload(
+                [
+                    "modules.seismo_response.class_Vs_profile",
+                    "modules.seismo_response.class_ground_motion",
+                    "modules.seismo_response.class_simulation",
+                    "modules.seismo_response.class_batch_simulation",
+                ]
+            )
 
     def run(
-            self,
-            parallel: bool = False,
-            n_cores: int | None = 1,
-            base_output_dir: str | None = None,
-            catch_errors: bool = False,
-            verbose: bool = True,
-            options: dict[str, Any] | None = None,
+        self,
+        parallel: bool = False,
+        n_cores: int | None = 1,
+        base_output_dir: str | None = None,
+        catch_errors: bool = False,
+        verbose: bool = True,
+        options: dict[str, Any] | None = None,
     ) -> list[Simulation_Results]:
         """
         Run simulations in batch.
@@ -147,7 +147,7 @@ class Batch_Simulation:
 
         if base_output_dir is None:
             current_time = hlp.get_current_time(for_filename=True)
-            base_output_dir = os.path.join('./', 'batch_sim_%s' % current_time)
+            base_output_dir = os.path.join("./", "batch_sim_%s" % current_time)
 
         other_params = [n_digits, base_output_dir, catch_errors, options]
 
@@ -162,8 +162,8 @@ class Batch_Simulation:
             if self.use_ctx:
                 if verbose:
                     print(
-                        'Parallel computing in progress using forkserver...',
-                        end=' ',
+                        "Parallel computing in progress using forkserver...",
+                        end=" ",
                     )
 
                 with self.ctx.Pool(processes=n_cores) as p:
@@ -174,7 +174,7 @@ class Batch_Simulation:
 
             else:
                 if verbose:
-                    print('Parallel computing in progress...', end=' ')
+                    print("Parallel computing in progress...", end=" ")
 
                 with mp.Pool(n_cores) as p:
                     sim_results = p.map(
@@ -186,9 +186,9 @@ class Batch_Simulation:
             #     print('done.')
 
             # Because no figures can be plotted in the parallel pool:
-            if options.get('show_fig', False):
+            if options.get("show_fig", False):
                 for sim_result in sim_results:
-                    sim_result.plot(save_fig=options.get('save_fig', False))
+                    sim_result.plot(save_fig=options.get("save_fig", False))
                 # END FOR
             # END IF
         # END IF
@@ -221,11 +221,11 @@ class Batch_Simulation:
         """
         i, other_params = all_params  # unpack
         n_digits, base_output_dir, catch_errors, options = other_params  # unpack
-        output_dir = os.path.join(base_output_dir, str(i).rjust(n_digits, '0'))
+        output_dir = os.path.join(base_output_dir, str(i).rjust(n_digits, "0"))
         if self.sim_type == Nonlinear_Simulation:
-            options.update({'sim_dir': output_dir})
+            options.update({"sim_dir": output_dir})
         else:  # linear or equivalent linear
-            options.update({'output_dir': output_dir})
+            options.update({"output_dir": output_dir})
 
         sim_obj = self.list_of_simulations[i]
         if catch_errors:
@@ -233,7 +233,7 @@ class Batch_Simulation:
                 sim_result = sim_obj.run(**options)
             except ValueError:
                 sim_result = None
-                print('Warning: ValueError encountered.')
+                print("Warning: ValueError encountered.")
         else:
             sim_result = sim_obj.run(**options)
 

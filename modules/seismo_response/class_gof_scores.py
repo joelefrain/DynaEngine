@@ -42,17 +42,15 @@ class GOF_Scores:
     scores: np.ndarray
 
     def __init__(
-            self,
-            measurement: np.ndarray,
-            simulation: np.ndarray,
+        self,
+        measurement: np.ndarray,
+        simulation: np.ndarray,
     ) -> None:
-        hlp.check_two_column_format(measurement, name='`measurement`')
-        hlp.check_two_column_format(simulation, name='`simulation`')
+        hlp.check_two_column_format(measurement, name="`measurement`")
+        hlp.check_two_column_format(simulation, name="`simulation`")
 
         if measurement.shape[0] != simulation.shape[0]:
-            raise TypeError(
-                'Length of measurement and simulation must be the same.'
-            )
+            raise TypeError("Length of measurement and simulation must be the same.")
 
         self.measurement = measurement
         self.simulation = simulation
@@ -62,31 +60,31 @@ class GOF_Scores:
     def __str__(self) -> str:
         """Define a string representation of calculated scores."""
         sn = [
-            'Normalized Arias Intensity (S1)',
-            'Normalized Energy Integral (S2)',
-            'Peak Arias Intensity (S3)',
-            'Peak Energy Integral (S4)',
-            'RMS Acceleration (S5)',
-            'RMS Velocity (S6)',
-            'RMS Displacement (S7)',
-            'Spectral Acceleration (S8)',
-            'Fourier Spectra (S9)',
-            'Cross Correlation (S10)',
+            "Normalized Arias Intensity (S1)",
+            "Normalized Energy Integral (S2)",
+            "Peak Arias Intensity (S3)",
+            "Peak Energy Integral (S4)",
+            "RMS Acceleration (S5)",
+            "RMS Velocity (S6)",
+            "RMS Displacement (S7)",
+            "Spectral Acceleration (S8)",
+            "Fourier Spectra (S9)",
+            "Cross Correlation (S10)",
         ]
 
         sum = 0
         count = 0
 
-        text = '\nGoodness of Fit Scores\n'
-        text += '---------------------------------------\n'
+        text = "\nGoodness of Fit Scores\n"
+        text += "---------------------------------------\n"
         for ix, sc in enumerate(self.scores):
             if not np.isnan(sc):
-                text += f'{sn[ix]:>31}: {sc: .3f}\n'
+                text += f"{sn[ix]:>31}: {sc: .3f}\n"
                 sum += sc
                 count += 1
 
-        text += '---------------------------------------\n'
-        text += f'Average Score: {sum/count:.3f}\n'
+        text += "---------------------------------------\n"
+        text += f"Average Score: {sum / count:.3f}\n"
 
         return text
 
@@ -103,17 +101,17 @@ class GOF_Scores:
         return self.scores
 
     def calc_scores(
-            self,
-            fmin: float | None = None,
-            fmax: float | None = None,
-            *,
-            score_arias: bool = True,
-            score_rms: bool = True,
-            score_spectra: bool = True,
-            score_cross_correlation: bool = False,
-            baseline: bool = True,
-            verbose: bool = False,
-            show_fig: bool = False,
+        self,
+        fmin: float | None = None,
+        fmax: float | None = None,
+        *,
+        score_arias: bool = True,
+        score_rms: bool = True,
+        score_spectra: bool = True,
+        score_cross_correlation: bool = False,
+        baseline: bool = True,
+        verbose: bool = False,
+        show_fig: bool = False,
     ) -> np.ndarray:
         """
         Calculate the goodness-of-fit scores with the given measurement
@@ -170,7 +168,7 @@ class GOF_Scores:
             fmin = fs / n
 
         if fmin >= fmax:
-            raise ValueError('fmax must be larger than fmin.')
+            raise ValueError("fmax must be larger than fmin.")
 
         scores = np.array([])
         if score_arias:
@@ -226,24 +224,24 @@ class GOF_Scores:
 
         if verbose:
             sn = [
-                'Normalized Arias Intensity (S1)',
-                'Normalized Energy Integral (S2)',
-                'Peak Arias Intensity (S3)',
-                'Peak Energy Integral (S4)',
-                'RMS Acceleration (S5)',
-                'RMS Velocity (S6)',
-                'RMS Displacement (S7)',
-                'Spectral Acceleration (S8)',
-                'Fourier Spectra (S9)',
-                'Cross Correlation (S10)',
+                "Normalized Arias Intensity (S1)",
+                "Normalized Energy Integral (S2)",
+                "Peak Arias Intensity (S3)",
+                "Peak Energy Integral (S4)",
+                "RMS Acceleration (S5)",
+                "RMS Velocity (S6)",
+                "RMS Displacement (S7)",
+                "Spectral Acceleration (S8)",
+                "Fourier Spectra (S9)",
+                "Cross Correlation (S10)",
             ]
 
-            print('Goodness of Fit Scores')
-            print('---------------------------------------')
+            print("Goodness of Fit Scores")
+            print("---------------------------------------")
             ind = 0
             if score_arias:
                 [
-                    print(f'{sn[ix]:>31}: {s: .3f}')
+                    print(f"{sn[ix]:>31}: {s: .3f}")
                     for ix, s in enumerate(scores[ind : ind + 4])
                 ]
 
@@ -251,7 +249,7 @@ class GOF_Scores:
 
             if score_rms:
                 [
-                    print(f'{sn[ix+4]:>31}: {s: .3f}')
+                    print(f"{sn[ix + 4]:>31}: {s: .3f}")
                     for ix, s in enumerate(scores[ind : ind + 3])
                 ]
 
@@ -259,17 +257,17 @@ class GOF_Scores:
 
             if score_spectra:
                 [
-                    print(f'{sn[ix+7]:>31}: {s: .3f}')
+                    print(f"{sn[ix + 7]:>31}: {s: .3f}")
                     for ix, s in enumerate(scores[ind : ind + 2])
                 ]
 
                 ind += 2
 
             if score_cross_correlation:
-                print(f'{sn[9]:>31}: {self.scores[9]: .3f}')
+                print(f"{sn[9]:>31}: {self.scores[9]: .3f}")
 
-            print('---------------------------------------')
-            print(f'Average Score: {np.mean(scores):.3f}')
+            print("---------------------------------------")
+            print(f"Average Score: {np.mean(scores):.3f}")
 
         return scores
 
@@ -279,10 +277,10 @@ class Batch_GOF_Scores:
 
     def __init__(self, list_of_scores: list[GOF_Scores]) -> None:
         if not isinstance(list_of_scores, list):
-            raise TypeError('`list_of_gof` should be a list.')
+            raise TypeError("`list_of_gof` should be a list.")
 
         if len(list_of_scores) == 0:
-            raise ValueError('`list_of_gof` should have at least one element.')
+            raise ValueError("`list_of_gof` should have at least one element.")
 
         n_scores = len(list_of_scores)
 
@@ -290,10 +288,10 @@ class Batch_GOF_Scores:
         self.n_scores = n_scores
 
     def run(
-            self,
-            parallel: bool = False,
-            n_cores: int | None = 1,
-            options: dict[str, Any] | None = None,
+        self,
+        parallel: bool = False,
+        n_cores: int | None = 1,
+        options: dict[str, Any] | None = None,
     ) -> list[GOF_Scores]:
         """
         Run gof scoring in batch.

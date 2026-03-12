@@ -12,11 +12,11 @@ from modules.seismo_response import helper_site_response as sr
 
 
 def lowpass(
-        orig_signal: np.ndarray,
-        cutoff_freq: float,
-        show_fig: bool = False,
-        filter_order: int = 4,
-        padlen: int | None = None,
+    orig_signal: np.ndarray,
+    cutoff_freq: float,
+    show_fig: bool = False,
+    filter_order: int = 4,
+    padlen: int | None = None,
 ) -> np.ndarray:
     """
     IIR low pass filter with zero phase distortion.
@@ -45,7 +45,7 @@ def lowpass(
     return _filter_kernel(
         orig_signal,
         cutoff_freq,
-        'lowpass',
+        "lowpass",
         show_fig=show_fig,
         filter_order=filter_order,
         padlen=padlen,
@@ -53,11 +53,11 @@ def lowpass(
 
 
 def highpass(
-        orig_signal: np.ndarray,
-        cutoff_freq: float,
-        show_fig: bool = False,
-        filter_order: int = 4,
-        padlen: int | None = None,
+    orig_signal: np.ndarray,
+    cutoff_freq: float,
+    show_fig: bool = False,
+    filter_order: int = 4,
+    padlen: int | None = None,
 ) -> np.ndarray:
     """
     IIR high pass filter with zero phase distortion.
@@ -86,7 +86,7 @@ def highpass(
     return _filter_kernel(
         orig_signal,
         cutoff_freq,
-        'highpass',
+        "highpass",
         show_fig=show_fig,
         filter_order=filter_order,
         padlen=padlen,
@@ -94,11 +94,11 @@ def highpass(
 
 
 def bandpass(
-        orig_signal: np.ndarray,
-        cutoff_freq: tuple[float, float],
-        show_fig: bool = False,
-        filter_order: int = 4,
-        padlen: int | None = None,
+    orig_signal: np.ndarray,
+    cutoff_freq: tuple[float, float],
+    show_fig: bool = False,
+    filter_order: int = 4,
+    padlen: int | None = None,
 ) -> np.ndarray:
     """
     IIR band pass filter with zero phase distortion.
@@ -127,7 +127,7 @@ def bandpass(
     return _filter_kernel(
         orig_signal,
         cutoff_freq,
-        'bandpass',
+        "bandpass",
         show_fig=show_fig,
         filter_order=filter_order,
         padlen=padlen,
@@ -135,11 +135,11 @@ def bandpass(
 
 
 def bandstop(
-        orig_signal: np.ndarray,
-        cutoff_freq: tuple[float, float],
-        show_fig: bool = False,
-        filter_order: int = 4,
-        padlen: int | None = None,
+    orig_signal: np.ndarray,
+    cutoff_freq: tuple[float, float],
+    show_fig: bool = False,
+    filter_order: int = 4,
+    padlen: int | None = None,
 ) -> np.ndarray:
     """
     IIR band stop filter with zero phase distorsion.
@@ -168,7 +168,7 @@ def bandstop(
     return _filter_kernel(
         orig_signal,
         cutoff_freq,
-        'bandstop',
+        "bandstop",
         show_fig=show_fig,
         filter_order=filter_order,
         padlen=padlen,
@@ -176,39 +176,33 @@ def bandstop(
 
 
 def _filter_kernel(
-        orig_signal: np.ndarray,
-        cutoff_freq: float,
-        filter_type: str,
-        show_fig: bool = False,
-        filter_order: int = 4,
-        padlen: int | None = None,
+    orig_signal: np.ndarray,
+    cutoff_freq: float,
+    filter_type: str,
+    show_fig: bool = False,
+    filter_order: int = 4,
+    padlen: int | None = None,
 ) -> np.ndarray:
-    if filter_type in ['bandpass', 'bandstop']:
+    if filter_type in ["bandpass", "bandstop"]:
         fmin, fmax = cutoff_freq
         if not isinstance(cutoff_freq, (list, tuple, np.ndarray)):
-            raise TypeError(
-                '`cutoff_freq` must be a list, tuple, or numpy array.'
-            )
+            raise TypeError("`cutoff_freq` must be a list, tuple, or numpy array.")
 
         if len(cutoff_freq) != 2:
-            raise ValueError('`cutoff_freq` must have length 2.')
+            raise ValueError("`cutoff_freq` must have length 2.")
 
         if cutoff_freq[1] <= cutoff_freq[0]:
-            raise ValueError(
-                '`cutoff_freq` must be two values from smaller to larger.'
-            )
+            raise ValueError("`cutoff_freq` must be two values from smaller to larger.")
 
-    elif filter_type in ['highpass', 'lowpass']:
+    elif filter_type in ["highpass", "lowpass"]:
         if not isinstance(cutoff_freq, (float, int, np.number)):
-            raise TypeError(
-                '`cutoff_freq` must be float, int, or numpy.number.'
-            )
+            raise TypeError("`cutoff_freq` must be float, int, or numpy.number.")
     else:
         raise ValueError(
             "`filter_type` must be in {'highpass', 'lowpass', 'bandpass', 'bandstop'}.",
         )
 
-    hlp.check_two_column_format(orig_signal, name='`orig_signal`')
+    hlp.check_two_column_format(orig_signal, name="`orig_signal`")
 
     x = orig_signal[:, 1]
     time = orig_signal[:, 0]
@@ -219,18 +213,18 @@ def _filter_kernel(
     df = 1.0 / (len(x) * dt)
     Wn = np.array(cutoff_freq) / f_nyquist
 
-    if filter_type == 'highpass' and cutoff_freq <= 0:
+    if filter_type == "highpass" and cutoff_freq <= 0:
         return orig_signal
 
-    if filter_type == 'lowpass' and cutoff_freq >= f_nyquist:
+    if filter_type == "lowpass" and cutoff_freq >= f_nyquist:
         return orig_signal
 
-    if filter_type == 'bandpass':
+    if filter_type == "bandpass":
         if fmax >= f_nyquist * 0.9999:
             return _filter_kernel(
                 orig_signal,
                 fmin,
-                'highpass',
+                "highpass",
                 show_fig=show_fig,
                 filter_order=filter_order,
                 padlen=padlen,
@@ -240,18 +234,18 @@ def _filter_kernel(
             return _filter_kernel(
                 orig_signal,
                 fmax,
-                'lowpass',
+                "lowpass",
                 show_fig=show_fig,
                 filter_order=filter_order,
                 padlen=padlen,
             )
 
-    if filter_type == 'bandstop':
+    if filter_type == "bandstop":
         if fmax >= f_nyquist * 0.9999:
             return _filter_kernel(
                 orig_signal,
                 fmin,
-                'lowpass',
+                "lowpass",
                 show_fig=show_fig,
                 filter_order=filter_order,
                 padlen=padlen,
@@ -261,71 +255,63 @@ def _filter_kernel(
             return _filter_kernel(
                 orig_signal,
                 fmax,
-                'highpass',
+                "highpass",
                 show_fig=show_fig,
                 filter_order=filter_order,
                 padlen=padlen,
             )
 
-    sos = scipy.signal.butter(
-        filter_order, Wn, btype=filter_type, output='sos'
-    )
+    sos = scipy.signal.butter(filter_order, Wn, btype=filter_type, output="sos")
     y = scipy.signal.sosfilt(sos, x)
 
     if show_fig:
         plt.figure()
         plt.subplot(221)
         plt.plot(time, x)
-        plt.title('Original')
-        plt.ylabel('Signal')
-        plt.grid(ls=':')
+        plt.title("Original")
+        plt.ylabel("Signal")
+        plt.grid(ls=":")
 
         plt.subplot(223)
         plt.plot(time, y)
-        plt.title('After filtering')
-        plt.xlabel('Time [sec]')
-        plt.ylabel('Signal')
-        plt.grid(ls=':')
+        plt.title("After filtering")
+        plt.xlabel("Time [sec]")
+        plt.ylabel("Signal")
+        plt.grid(ls=":")
 
         ax = plt.subplot(222)
         freq_orig, spec_orig = fourier_transform(orig_signal).T
         plt.plot(freq_orig, spec_orig)
         ylim = ax.get_ylim()
-        if (
-            isinstance(cutoff_freq, (list, np.ndarray))
-            and len(cutoff_freq) >= 1
-        ):
-            plt.plot([cutoff_freq[0]] * 2, ylim, c='orange')
-            plt.plot([cutoff_freq[1]] * 2, ylim, c='orange')
+        if isinstance(cutoff_freq, (list, np.ndarray)) and len(cutoff_freq) >= 1:
+            plt.plot([cutoff_freq[0]] * 2, ylim, c="orange")
+            plt.plot([cutoff_freq[1]] * 2, ylim, c="orange")
         else:
-            plt.plot([cutoff_freq] * 2, ylim, c='orange')
+            plt.plot([cutoff_freq] * 2, ylim, c="orange")
 
-        plt.xscale('log')
+        plt.xscale("log")
         plt.xlim(0.01)
         plt.ylim(0, np.max(spec_orig[1:]))
-        plt.grid(ls=':')
-        plt.xlabel('Frequency [Hz]')
-        plt.ylabel('Fourier amplitude')
+        plt.grid(ls=":")
+        plt.xlabel("Frequency [Hz]")
+        plt.ylabel("Fourier amplitude")
 
         ax = plt.subplot(224)
         freq, spec = fourier_transform(np.column_stack((time, y))).T
         plt.plot(freq, spec)
         ylim = ax.get_ylim()
-        if (
-            isinstance(cutoff_freq, (list, np.ndarray))
-            and len(cutoff_freq) >= 1
-        ):
-            plt.plot([cutoff_freq[0]] * 2, ylim, c='orange')
-            plt.plot([cutoff_freq[1]] * 2, ylim, c='orange')
+        if isinstance(cutoff_freq, (list, np.ndarray)) and len(cutoff_freq) >= 1:
+            plt.plot([cutoff_freq[0]] * 2, ylim, c="orange")
+            plt.plot([cutoff_freq[1]] * 2, ylim, c="orange")
         else:
-            plt.plot([cutoff_freq] * 2, ylim, c='orange')
+            plt.plot([cutoff_freq] * 2, ylim, c="orange")
 
-        plt.xscale('log')
+        plt.xscale("log")
         plt.xlim(0.01)
         plt.ylim(0, np.max(spec[1:]))
-        plt.grid(ls=':')
-        plt.xlabel('Frequency [Hz]')
-        plt.ylabel('Fourier amplitude')
+        plt.grid(ls=":")
+        plt.xlabel("Frequency [Hz]")
+        plt.ylabel("Fourier amplitude")
 
         plt.tight_layout(pad=0.3, h_pad=0.5, w_pad=0.5)
 
@@ -333,9 +319,9 @@ def _filter_kernel(
 
 
 def baseline(
-        orig_signal: np.ndarray,
-        show_fig: bool = False,
-        cutoff_freq: float = 0.20,
+    orig_signal: np.ndarray,
+    show_fig: bool = False,
+    cutoff_freq: float = 0.20,
 ) -> np.ndarray:
     """
     Baseline correction of a time-domain signal using high pass filtering.
@@ -355,7 +341,7 @@ def baseline(
     corrected : np.ndarray
         The corrected signal.
     """
-    hlp.check_two_column_format(orig_signal, name='`orig_signal`')
+    hlp.check_two_column_format(orig_signal, name="`orig_signal`")
 
     a = orig_signal[:, 1]
     time = orig_signal[:, 0]
@@ -441,49 +427,49 @@ def baseline(
         plt.figure(figsize=(12, 7))
 
         ax = plt.subplot(331)
-        ax.plot(time, a, c='b')
-        ax.set_title('Uncorrected')
-        ax.set_ylabel('Acceleration')
-        ax.grid(ls=':')
+        ax.plot(time, a, c="b")
+        ax.set_title("Uncorrected")
+        ax.set_ylabel("Acceleration")
+        ax.grid(ls=":")
 
         ax = plt.subplot(334)
-        ax.plot(v[:, 0], v[:, 1], c='b')
-        ax.set_ylabel('Velocity')
-        ax.grid(ls=':')
+        ax.plot(v[:, 0], v[:, 1], c="b")
+        ax.set_ylabel("Velocity")
+        ax.grid(ls=":")
 
         ax = plt.subplot(337)
-        ax.plot(u[:, 0], u[:, 1], c='b')
-        ax.set_ylabel('Displacement')
-        ax.grid(ls=':')
+        ax.plot(u[:, 0], u[:, 1], c="b")
+        ax.set_ylabel("Displacement")
+        ax.grid(ls=":")
 
         ax = plt.subplot(332)
-        ax.plot(a_new2[:, 0], a_new2[:, 1], c='m')
-        ax.set_title('Baseline corrected')
-        ax.set_ylabel('Acceleration')
-        ax.grid(ls=':')
+        ax.plot(a_new2[:, 0], a_new2[:, 1], c="m")
+        ax.set_title("Baseline corrected")
+        ax.set_ylabel("Acceleration")
+        ax.grid(ls=":")
 
         ax = plt.subplot(335)
-        ax.plot(v_[:, 0], v_[:, 1], c='m')
-        ax.set_ylabel('Velocity')
-        ax.grid(ls=':')
+        ax.plot(v_[:, 0], v_[:, 1], c="m")
+        ax.set_ylabel("Velocity")
+        ax.grid(ls=":")
 
         ax = plt.subplot(338)
-        ax.plot(u_[:, 0], u_[:, 1], c='m')
-        ax.set_ylabel('Displacement')
-        ax.grid(ls=':')
+        ax.plot(u_[:, 0], u_[:, 1], c="m")
+        ax.set_ylabel("Displacement")
+        ax.grid(ls=":")
 
         freq_o, spec_o = fourier_transform(orig_signal).T
         freq_n, spec_n = fourier_transform(a_new2).T
 
         ax = plt.subplot(333)
-        ax.plot(freq_o, spec_o, c='b', lw=1.75)
-        ax.plot(freq_n, spec_n, c='m', lw=1.15)
-        ax.set_xscale('log')
+        ax.plot(freq_o, spec_o, c="b", lw=1.75)
+        ax.plot(freq_n, spec_n, c="m", lw=1.15)
+        ax.set_xscale("log")
         ax.set_xlim(0.01)
         ax.set_ylim(0, np.max(spec_o[1:]))
-        ax.set_xlabel('Frequency [Hz]')
-        ax.set_title('Fourier spectra')
-        ax.grid(ls=':')
+        ax.set_xlabel("Frequency [Hz]")
+        ax.set_title("Fourier spectra")
+        ax.grid(ls=":")
 
         plt.tight_layout(pad=0.3)
 
@@ -501,11 +487,11 @@ def _remove_linear_trend(signal: np.ndarray) -> np.ndarray:
 
 
 def fourier_transform(
-        signal_2_col: np.ndarray,
-        *,
-        real_val: bool = True,
-        double_sided: bool = False,
-        show_fig: bool = False,
+    signal_2_col: np.ndarray,
+    *,
+    real_val: bool = True,
+    double_sided: bool = False,
+    show_fig: bool = False,
 ) -> np.ndarray:
     """
     Fourier transform using FFT.
@@ -527,7 +513,7 @@ def fourier_transform(
     spectra : np.ndarray
         A two-column array containing [freq_array, spectrum].
     """
-    hlp.check_two_column_format(signal_2_col, '`signal_2_col`')
+    hlp.check_two_column_format(signal_2_col, "`signal_2_col`")
 
     signal_ = signal_2_col
 
@@ -560,19 +546,19 @@ def fourier_transform(
 
         plt.subplot(211)
         plt.plot(time_array, x)
-        plt.xlabel('Time [sec]')
-        plt.ylabel('Acceleration')
-        plt.grid(ls=':')
+        plt.xlabel("Time [sec]")
+        plt.ylabel("Acceleration")
+        plt.grid(ls=":")
 
         plt.subplot(212)
         plt.plot(freq_array, abs(spectrum))
-        plt.xlabel('Frequency [Hz]')
-        plt.ylabel('Amplitude')
+        plt.xlabel("Frequency [Hz]")
+        plt.ylabel("Amplitude")
         plt.ylim(0, np.max(spectrum[1:]))
         plt.xlim(0.01)
-        plt.grid(ls=':')
+        plt.grid(ls=":")
         if double_sided is False:
-            plt.xscale('log')
+            plt.xscale("log")
         elif double_sided is True:
             pass
 
@@ -603,7 +589,7 @@ def taper_Tukey(input_signal: np.ndarray, width: float = 0.05) -> np.ndarray:
         When the input signal is not a numpy array
     """
     if not isinstance(input_signal, np.ndarray):
-        raise TypeError('`input_signal` should be a numpy array.')
+        raise TypeError("`input_signal` should be a numpy array.")
 
     if input_signal.ndim == 2:  # if input_signal has two columns
         time_array = input_signal[:, 0]
@@ -616,19 +602,19 @@ def taper_Tukey(input_signal: np.ndarray, width: float = 0.05) -> np.ndarray:
         output = input_signal * scipy.signal.tukey(ll, width / 2.0)
     else:
         raise TypeError(
-            '`input_signal` should be either 1 or 2 dimensional. '
-            'And if 2D, should have 2 columns.',
+            "`input_signal` should be either 1 or 2 dimensional. "
+            "And if 2D, should have 2 columns.",
         )
 
     return output
 
 
 def calc_transfer_function(
-        input_signal: np.ndarray,
-        output_signal: np.ndarray,
-        *,
-        amplitude_only: bool = True,
-        smooth_signal: bool = False,
+    input_signal: np.ndarray,
+    output_signal: np.ndarray,
+    *,
+    amplitude_only: bool = True,
+    smooth_signal: bool = False,
 ) -> np.ndarray:
     """
     Calculate transfer function between the output and input time-domain
@@ -658,27 +644,23 @@ def calc_transfer_function(
     ValueError
         When the input or output signal contains invalid values
     """
-    hlp.check_two_column_format(input_signal, name='`input_signal`')
-    hlp.check_two_column_format(output_signal, name='`output_signal`')
+    hlp.check_two_column_format(input_signal, name="`input_signal`")
+    hlp.check_two_column_format(output_signal, name="`output_signal`")
     if hlp.check_numbers_valid(input_signal) in [-1, -2]:
-        raise ValueError('`input_signal` contains invalid values.')
+        raise ValueError("`input_signal` contains invalid values.")
 
     if hlp.check_numbers_valid(output_signal) in [-1, -2]:
-        raise ValueError('`output_signal` contains invalid values.')
+        raise ValueError("`output_signal` contains invalid values.")
 
     dt_in = input_signal[1, 0] - input_signal[0, 0]
     dt_out = output_signal[1, 0] - output_signal[0, 0]
     if not np.allclose(dt_in, dt_out, atol=1e-6):
-        raise ValueError(
-            'Time intervals of the input and output should match.'
-        )
+        raise ValueError("Time intervals of the input and output should match.")
 
     N_in = input_signal.shape[0]
     N_out = output_signal.shape[0]
     if N_in != N_out:
-        raise ValueError(
-            'Length of the input and output signals should match.'
-        )
+        raise ValueError("Length of the input and output signals should match.")
 
     result_in = fourier_transform(input_signal, real_val=False)
     result_out = fourier_transform(output_signal, real_val=False)
@@ -690,8 +672,8 @@ def calc_transfer_function(
 
     if not np.allclose(freq_in, freq_out, atol=1e-6):
         print(
-            'WARNING in `calc_transfer_function()`: The frequency arrays '
-            'of the output and input Fourier spectra do not match.',
+            "WARNING in `calc_transfer_function()`: The frequency arrays "
+            "of the output and input Fourier spectra do not match.",
         )
 
     freq = freq_in
@@ -699,8 +681,8 @@ def calc_transfer_function(
 
     if not amplitude_only and smooth_signal:
         raise ValueError(
-            'If `smooth_signal` is set to True, `amplitude_only` '
-            'needs to be also set to True.',
+            "If `smooth_signal` is set to True, `amplitude_only` "
+            "needs to be also set to True.",
         )
 
     if not smooth_signal:
@@ -716,22 +698,22 @@ def calc_transfer_function(
 
 
 def log_smooth(
-        signal: np.ndarray,
-        win_len: int = 15,
-        window: Literal[
-            'flat',
-            'hanning',
-            'hamming',
-            'bartlett',
-            'blackman',
-        ] = 'hanning',
-        lin_space: bool = True,
-        fmin: float | None = None,
-        fmax: float | None = None,
-        n_pts: int = None,
-        fix_ends: bool = True,
-        beta1: float = 0.9,
-        beta2: float = 0.9,
+    signal: np.ndarray,
+    win_len: int = 15,
+    window: Literal[
+        "flat",
+        "hanning",
+        "hamming",
+        "bartlett",
+        "blackman",
+    ] = "hanning",
+    lin_space: bool = True,
+    fmin: float | None = None,
+    fmax: float | None = None,
+    n_pts: int = None,
+    fix_ends: bool = True,
+    beta1: float = 0.9,
+    beta2: float = 0.9,
 ) -> np.ndarray:
     """
     Smooth a frequency spectrum with constant window size in logarithmic space.
@@ -778,21 +760,21 @@ def log_smooth(
     ValueError
         When the input values are not entirely valid
     """
-    hlp.assert_1D_numpy_array(signal, name='`signal`')
+    hlp.assert_1D_numpy_array(signal, name="`signal`")
     if signal.size < win_len:
-        raise ValueError('Input vector needs to be bigger than window size.')
+        raise ValueError("Input vector needs to be bigger than window size.")
 
     if win_len < 3:
         return signal
 
-    if window not in ['flat', 'hanning', 'hamming', 'bartlett', 'blackman']:
+    if window not in ["flat", "hanning", "hamming", "bartlett", "blackman"]:
         raise ValueError(
             "'Window' should be 'flat', 'hanning', 'hamming', 'bartlett', or 'blackman'",
         )
 
     if lin_space and (fmin is None or fmax is None):
         raise ValueError(
-            'If `lin_space` is `True`, `fmin` and `fmax` must be specified.',
+            "If `lin_space` is `True`, `fmin` and `fmax` must be specified.",
         )
 
     if n_pts is None:
@@ -811,10 +793,10 @@ def log_smooth(
         n = win_len // 2
 
         if beta1 < 0 or beta1 > 1:
-            raise ValueError('`beta1` should be within [0, 1].')
+            raise ValueError("`beta1` should be within [0, 1].")
 
         if beta2 < 0 or beta2 > 1:
-            raise ValueError('`beta2` should be within [0, 1].')
+            raise ValueError("`beta2` should be within [0, 1].")
 
         y[0] = np.mean(x[:n])
         for j in range(1, n):  # exponentially weighted average
@@ -829,15 +811,15 @@ def log_smooth(
 
 
 def lin_smooth(
-        x: np.ndarray,
-        window_len: int = 15,
-        window: Literal[
-            'flat',
-            'hanning',
-            'hamming',
-            'bartlett',
-            'blackman',
-        ] = 'hanning',
+    x: np.ndarray,
+    window_len: int = 15,
+    window: Literal[
+        "flat",
+        "hanning",
+        "hamming",
+        "bartlett",
+        "blackman",
+    ] = "hanning",
 ) -> np.ndarray:
     """
     Smooth the data using a window with requested size.
@@ -889,31 +871,31 @@ def lin_smooth(
         When the input values are not entirely valid
     """
     if x.ndim != 1:
-        raise ValueError('smooth only accepts one-dimensional arrays.')
+        raise ValueError("smooth only accepts one-dimensional arrays.")
 
     if x.size < window_len:
-        raise ValueError('Input vector needs to be bigger than window size.')
+        raise ValueError("Input vector needs to be bigger than window size.")
 
     if window_len < 3:
         return x
 
-    if window not in ['flat', 'hanning', 'hamming', 'bartlett', 'blackman']:
+    if window not in ["flat", "hanning", "hamming", "bartlett", "blackman"]:
         raise ValueError(
             "'Window' should be 'flat', 'hanning', 'hamming', 'bartlett', or 'blackman'",
         )
 
-    if window == 'flat':  # moving average
-        w = np.ones(window_len, 'd')
+    if window == "flat":  # moving average
+        w = np.ones(window_len, "d")
     else:
-        w = eval('np.' + window + '(window_len)')
+        w = eval("np." + window + "(window_len)")
 
-    y = np.convolve(w / w.sum(), x, mode='same')
+    y = np.convolve(w / w.sum(), x, mode="same")
     return y
 
 
 def sine_smooth(
-        signal: np.ndarray,
-        window_span: float = 0.3,
+    signal: np.ndarray,
+    window_span: float = 0.3,
 ) -> np.ndarray:
     """
     Smooths a frequency spectrum using a sine-shaped window.

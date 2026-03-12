@@ -8,12 +8,12 @@ from modules.seismo_response import helper_site_response as sr
 
 
 def tau_MKZ(
-        gamma: np.ndarray,
-        *,
-        gamma_ref: float,
-        beta: float,
-        s: float,
-        Gmax: float,
+    gamma: np.ndarray,
+    *,
+    gamma_ref: float,
+    beta: float,
+    s: float,
+    Gmax: float,
 ) -> np.ndarray:
     """
     Calculate the MKZ shear stress. The MKZ model is proposed in Matasovic and
@@ -51,27 +51,27 @@ def tau_MKZ(
         The shear stress determined by the formula above. Same shape as ``x``,
         and same unit as ``Gmax``.
     """
-    hlp.assert_1D_numpy_array(gamma, name='`gamma`')
+    hlp.assert_1D_numpy_array(gamma, name="`gamma`")
     T_MKZ = Gmax * gamma / (1 + beta * (np.abs(gamma) / gamma_ref) ** s)
 
     return T_MKZ
 
 
 def fit_H4_x_single_layer(
-        damping_data_in_pct: np.ndarray,
-        *,
-        use_scipy: bool = True,
-        pop_size: int = 800,
-        n_gen: int = 100,
-        lower_bound_power: float = -4,
-        upper_bound_power: float = 6,
-        eta: float = 0.1,
-        seed: int = 0,
-        show_fig: bool = False,
-        verbose: bool = False,
-        suppress_warnings: bool = True,
-        parallel: bool = False,
-        n_cores: int | None = None,
+    damping_data_in_pct: np.ndarray,
+    *,
+    use_scipy: bool = True,
+    pop_size: int = 800,
+    n_gen: int = 100,
+    lower_bound_power: float = -4,
+    upper_bound_power: float = 6,
+    eta: float = 0.1,
+    seed: int = 0,
+    show_fig: bool = False,
+    verbose: bool = False,
+    suppress_warnings: bool = True,
+    parallel: bool = False,
+    n_cores: int | None = None,
 ) -> dict[str, float]:
     """
     Perform H4_x curve fitting for one damping curve using the genetic
@@ -164,10 +164,10 @@ def fit_H4_x_single_layer(
     )
 
     best_param = {}
-    best_param['gamma_ref'] = 10 ** result[0]
-    best_param['s'] = 10 ** result[1]
-    best_param['beta'] = 10 ** result[2]
-    best_param['Gmax'] = 1.0
+    best_param["gamma_ref"] = 10 ** result[0]
+    best_param["s"] = 10 ** result[1]
+    best_param["beta"] = 10 ** result[2]
+    best_param["Gmax"] = 1.0
 
     if show_fig:
         sr._plot_damping_curve_fit(damping_data_in_pct, best_param, tau_MKZ)
@@ -176,8 +176,8 @@ def fit_H4_x_single_layer(
 
 
 def damping_misfit(
-        param_without_Gmax: tuple[float, float, float],
-        damping_data: np.ndarray,
+    param_without_Gmax: tuple[float, float, float],
+    damping_data: np.ndarray,
 ) -> float:
     """
     Calculate the misfit given a set of MKZ parameters. Note that the values
@@ -218,8 +218,8 @@ def damping_misfit(
 
 
 def serialize_params_to_array(
-        param: dict[str, float],
-        to_files: bool = False,
+    param: dict[str, float],
+    to_files: bool = False,
 ) -> np.ndarray:
     """
     Convert the MKZ parameters from a dictionary to an array, according to this
@@ -244,7 +244,7 @@ def serialize_params_to_array(
         in the order specified above.
     """
     assert len(param) == 4
-    order = ['gamma_ref', 's', 'beta', 'Gmax']
+    order = ["gamma_ref", "s", "beta", "Gmax"]
     param_array = []
     for key in order:
         param_array.append(param[key])
@@ -256,8 +256,8 @@ def serialize_params_to_array(
 
 
 def deserialize_array_to_params(
-        array: np.ndarray,
-        from_files: bool = False,
+    array: np.ndarray,
+    from_files: bool = False,
 ) -> dict[str, float]:
     """
     Reconstruct a MKZ model parameter dictionary from an array of values.
@@ -289,24 +289,24 @@ def deserialize_array_to_params(
 
     if from_files:
         param = {}
-        param['gamma_ref'] = array[0]
-        param['s'] = array[2]
-        param['beta'] = array[3]
-        param['Gmax'] = 1.0  # "H4_G_SITE_NAME.txt" files don't have Gmax info
+        param["gamma_ref"] = array[0]
+        param["s"] = array[2]
+        param["beta"] = array[3]
+        param["Gmax"] = 1.0  # "H4_G_SITE_NAME.txt" files don't have Gmax info
     else:
         param = {}
-        param['gamma_ref'] = array[0]
-        param['s'] = array[1]
-        param['beta'] = array[2]
-        param['Gmax'] = array[3]
+        param["gamma_ref"] = array[0]
+        param["s"] = array[1]
+        param["beta"] = array[2]
+        param["Gmax"] = array[3]
 
     return param
 
 
 def fit_MKZ(
-        curve_data: np.ndarray,
-        show_fig: bool = False,
-        verbose: bool = False,
+    curve_data: np.ndarray,
+    show_fig: bool = False,
+    verbose: bool = False,
 ) -> tuple[np.ndarray, np.ndarray]:
     """
     Fit MKZ model to G/Gmax curves.
@@ -340,7 +340,7 @@ def fit_MKZ(
     """
     from scipy.optimize import curve_fit
 
-    hlp.assert_2D_numpy_array(curve_data, name='`curve_data`')
+    hlp.assert_2D_numpy_array(curve_data, name="`curve_data`")
 
     nr = 109
     fitted_curves = np.zeros((nr, curve_data.shape[1]))
@@ -367,11 +367,11 @@ def fit_MKZ(
         return 1.0 / (1 + beta * (x / gamma_ref) ** s)
 
     if verbose:
-        print('Fitting MKZ model to G/Gmax data. Total: %d layers.' % n_ma)
+        print("Fitting MKZ model to G/Gmax data. Total: %d layers." % n_ma)
 
     for j in range(n_ma):
         if verbose:
-            print('  Layer #%d' % j)
+            print("  Layer #%d" % j)
 
         x_data = gamma[:, j]
         y_data = GGmax[:, j]
@@ -411,24 +411,24 @@ def fit_MKZ(
             plt.semilogx(
                 gamma[:, k] * 100,
                 GGmax[:, k],
-                ls='-',
-                marker='o',
+                ls="-",
+                marker="o",
                 lw=1.5,
                 alpha=0.8,
-                label='Data points',
+                label="Data points",
             )
             plt.semilogx(
                 gamma_ * 100,
                 GGmax_[:, k],
                 lw=1.5,
-                label='Curve fit',
+                label="Curve fit",
             )
-            plt.xlabel('Shear strain [%]')
-            plt.ylabel('G/Gmax')
-            plt.legend(loc='lower left')
-            plt.grid(ls=':', lw=0.5)
+            plt.xlabel("Shear strain [%]")
+            plt.ylabel("G/Gmax")
+            plt.legend(loc="lower left")
+            plt.grid(ls=":", lw=0.5)
             plt.title(
-                r'$\gamma_{\mathrm{ref}}$ = %.3g, s = %.3g, $\beta$ = %.3g'
+                r"$\gamma_{\mathrm{ref}}$ = %.3g, s = %.3g, $\beta$ = %.3g"
                 % (ref_strain[k], s_value[k], beta[k]),
             )
         # END FOR

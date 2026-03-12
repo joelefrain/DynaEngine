@@ -9,9 +9,7 @@ from modules.seismo_response import helper_signal_processing as sp
 from modules.seismo_response import helper_site_response as sr
 
 
-def S_(
-        meas: float | np.ndarray, simu: float | np.ndarray
-) -> float | np.ndarray:
+def S_(meas: float | np.ndarray, simu: float | np.ndarray) -> float | np.ndarray:
     """
     Score the provided elements as described in Shi & Asimaki (2017).
 
@@ -60,12 +58,12 @@ def S_(
 
 
 def d_1234(
-        measurement: np.ndarray,
-        simulation: np.ndarray,
-        fmin: float | None = None,
-        fmax: float | None = None,
-        baseline: bool = True,
-        show_fig: bool = False,
+    measurement: np.ndarray,
+    simulation: np.ndarray,
+    fmin: float | None = None,
+    fmax: float | None = None,
+    baseline: bool = True,
+    show_fig: bool = False,
 ) -> tuple[float, float, float, float]:
     """
     Calculate the first four goodness-of-fit scores in the GoF scheme
@@ -152,24 +150,16 @@ def d_1234(
     # If mismatched in time spacing, interpolate to grid with more points
     # (assuming both time series start at 0 and and stop at same time)
     if n_m < n_s:
-        N_Ia_m = hlp.interpolate(
-            t2[0], t2[-1], n_s, N_Ia_m, t1, log_scale=False
-        )
-        N_Ie_m = hlp.interpolate(
-            t2[0], t2[-1], n_s, N_Ie_m, t1, log_scale=False
-        )
+        N_Ia_m = hlp.interpolate(t2[0], t2[-1], n_s, N_Ia_m, t1, log_scale=False)
+        N_Ie_m = hlp.interpolate(t2[0], t2[-1], n_s, N_Ie_m, t1, log_scale=False)
 
         N_Ia_m = np.nan_to_num(N_Ia_m)
         N_Ie_m = np.nan_to_num(N_Ie_m)
 
         tt_array = t2
     elif n_m > n_s:
-        N_Ia_s = hlp.interpolate(
-            t1[0], t1[-1], n_m, N_Ia_s, t2, log_scale=False
-        )
-        N_Ie_s = hlp.interpolate(
-            t1[0], t1[-1], n_m, N_Ie_s, t2, log_scale=False
-        )
+        N_Ia_s = hlp.interpolate(t1[0], t1[-1], n_m, N_Ia_s, t2, log_scale=False)
+        N_Ie_s = hlp.interpolate(t1[0], t1[-1], n_m, N_Ie_s, t2, log_scale=False)
 
         N_Ia_s = np.nan_to_num(N_Ia_s)
         N_Ie_s = np.nan_to_num(N_Ie_s)
@@ -188,62 +178,48 @@ def d_1234(
     if show_fig:
         fig, ax = plt.subplots(2, 2, figsize=(10, 7), dpi=100)
 
-        ax[0, 0].plot(tt_array, N_Ia_m, label='Measurement', color='tab:blue')
+        ax[0, 0].plot(tt_array, N_Ia_m, label="Measurement", color="tab:blue")
         ax[0, 0].plot(
             tt_array,
             N_Ia_s,
-            label='Simulation',
-            linestyle='--',
-            color='tab:orange',
+            label="Simulation",
+            linestyle="--",
+            color="tab:orange",
         )
-        ax[0, 0].set_title(f'Norm. Arias Intensity (S1): {d1:.2f}')
-        ax[0, 0].set_xlabel('Time (s)')
-        ax[0, 0].set_ylabel(
-            r' Normalized Arias Intensity, I$_a$ / I$_{a, peak}$'
-        )
+        ax[0, 0].set_title(f"Norm. Arias Intensity (S1): {d1:.2f}")
+        ax[0, 0].set_xlabel("Time (s)")
+        ax[0, 0].set_ylabel(r" Normalized Arias Intensity, I$_a$ / I$_{a, peak}$")
         ax[0, 0].set_xlim((0, np.max(Ia_m[:, 0])))
         ax[0, 0].set_ylim((-0.1, 1.1))
         ax[0, 0].legend()
         ax[0, 0].grid(alpha=0.5)
 
-        ax[0, 1].plot(tt_array, N_Ie_m, label='Measurement', color='tab:blue')
-        ax[0, 1].plot(tt_array, N_Ie_s, label='Simulation', color='tab:orange')
-        ax[0, 1].set_title(f'Norm. Energy Integral (S2): {d2:.2f}')
-        ax[0, 1].set_xlabel('Time (s)')
-        ax[0, 1].set_ylabel(
-            r'Normalized Energy Integral, I$_e$ / I$_{e, peak}$'
-        )
+        ax[0, 1].plot(tt_array, N_Ie_m, label="Measurement", color="tab:blue")
+        ax[0, 1].plot(tt_array, N_Ie_s, label="Simulation", color="tab:orange")
+        ax[0, 1].set_title(f"Norm. Energy Integral (S2): {d2:.2f}")
+        ax[0, 1].set_xlabel("Time (s)")
+        ax[0, 1].set_ylabel(r"Normalized Energy Integral, I$_e$ / I$_{e, peak}$")
         ax[0, 1].set_xlim((0, np.max(Ie_m[:, 0])))
         ax[0, 1].set_ylim((-0.1, 1.1))
         ax[0, 1].grid(alpha=0.5)
 
-        ax[1, 0].plot(
-            tt_array, Ia_m[:, 1], label='Measurement', color='tab:blue'
-        )
-        ax[1, 0].plot(
-            tt_array, Ia_s[:, 1], label='Simulation', color='tab:orange'
-        )
-        ax[1, 0].set_title(f'Peak Arias Intensity (S3): {d3:.2f}')
-        ax[1, 0].set_xlabel('Time (s)')
-        ax[1, 0].set_ylabel(r'Arias Intensity, I$_a$')
+        ax[1, 0].plot(tt_array, Ia_m[:, 1], label="Measurement", color="tab:blue")
+        ax[1, 0].plot(tt_array, Ia_s[:, 1], label="Simulation", color="tab:orange")
+        ax[1, 0].set_title(f"Peak Arias Intensity (S3): {d3:.2f}")
+        ax[1, 0].set_xlabel("Time (s)")
+        ax[1, 0].set_ylabel(r"Arias Intensity, I$_a$")
         ax[1, 0].set_xlim((0, np.max(Ia_m[:, 0])))
         ax[1, 0].grid(alpha=0.5)
 
-        ax[1, 1].plot(
-            tt_array, Ie_m[:, 1], label='Measurement', color='tab:blue'
-        )
-        ax[1, 1].plot(
-            tt_array, Ie_s[:, 1], label='Simulation', color='tab:orange'
-        )
-        ax[1, 1].set_title(f'Peak Energy Integral (S4): {d4:.2f}')
-        ax[1, 1].set_xlabel('Time (s)')
-        ax[1, 1].set_ylabel(r'Energy Integral, I$_e$')
+        ax[1, 1].plot(tt_array, Ie_m[:, 1], label="Measurement", color="tab:blue")
+        ax[1, 1].plot(tt_array, Ie_s[:, 1], label="Simulation", color="tab:orange")
+        ax[1, 1].set_title(f"Peak Energy Integral (S4): {d4:.2f}")
+        ax[1, 1].set_xlabel("Time (s)")
+        ax[1, 1].set_ylabel(r"Energy Integral, I$_e$")
         ax[1, 1].set_xlim((0, np.max(Ie_m[:, 0])))
         ax[1, 1].grid(alpha=0.5)
 
-        fig.suptitle(
-            r'Arias Intensity I$_a$ and Energy Integral I$_e$', fontsize=16
-        )
+        fig.suptitle(r"Arias Intensity I$_a$ and Energy Integral I$_e$", fontsize=16)
 
         plt.tight_layout()
 
@@ -251,7 +227,7 @@ def d_1234(
 
 
 def calc_AriasIntensity(
-        accel_in_SI_unit: np.ndarray,
+    accel_in_SI_unit: np.ndarray,
 ) -> tuple[np.ndarray, float]:
     """
     Compute Arias intensity for scoring.
@@ -298,12 +274,12 @@ def calc_AriasIntensity(
 
 
 def d_567(
-        measurement: np.ndarray,
-        simulation: np.ndarray,
-        fmin: float | None = None,
-        fmax: float | None = None,
-        baseline: bool = True,
-        show_fig: bool = False,
+    measurement: np.ndarray,
+    simulation: np.ndarray,
+    fmin: float | None = None,
+    fmax: float | None = None,
+    baseline: bool = True,
+    show_fig: bool = False,
 ) -> tuple[float, float, float]:
     """
     Calculate the 5th, 6th, and 7th goodness-of-fit scores in the GoF scheme
@@ -403,84 +379,84 @@ def d_567(
         fig, ax = plt.subplots(3, 1, figsize=(10, 7), dpi=100, sharex=True)
 
         if pga_m >= pga_s:
-            ax[0].plot(t1, a_m[:, 1], label='Measurement', linewidth=0.75)
-            ax[0].plot(t2, a_s[:, 1], label='Simulation', linewidth=0.75)
+            ax[0].plot(t1, a_m[:, 1], label="Measurement", linewidth=0.75)
+            ax[0].plot(t2, a_s[:, 1], label="Simulation", linewidth=0.75)
         else:
             ax[0].plot(
                 t2,
                 a_s[:, 1],
-                label='Simulation',
+                label="Simulation",
                 linewidth=0.75,
-                color='tab:orange',
+                color="tab:orange",
             )
 
             ax[0].plot(
                 t1,
                 a_m[:, 1],
-                label='Measurement',
+                label="Measurement",
                 linewidth=0.75,
-                color='tab:blue',
+                color="tab:blue",
             )
 
-        ax[0].set_ylabel('Acceleration')
+        ax[0].set_ylabel("Acceleration")
         ax[0].set_title(
-            f'RMS Acceleration (S5): {d5:.2f}, RMS Velocity (S6): {d6:.2f},'
-            f' RMS Displacement (S7): {d7:.2f}'
+            f"RMS Acceleration (S5): {d5:.2f}, RMS Velocity (S6): {d6:.2f},"
+            f" RMS Displacement (S7): {d7:.2f}"
         )
         ax[0].set_xlim((0, np.max([np.max(t1), np.max(t2)])))
         ax[0].legend()
         ax[0].grid(alpha=0.5)
 
         if pgv_m >= pgv_s:
-            ax[1].plot(t1, v_m[:, 1], label='Measurement', linewidth=0.75)
-            ax[1].plot(t2, v_s[:, 1], label='Simulation', linewidth=0.75)
+            ax[1].plot(t1, v_m[:, 1], label="Measurement", linewidth=0.75)
+            ax[1].plot(t2, v_s[:, 1], label="Simulation", linewidth=0.75)
         else:
             ax[1].plot(
                 t2,
                 v_s[:, 1],
-                label='Simulation',
+                label="Simulation",
                 linewidth=0.75,
-                color='tab:orange',
+                color="tab:orange",
             )
 
             ax[1].plot(
                 t1,
                 v_m[:, 1],
-                label='Measurement',
+                label="Measurement",
                 linewidth=0.75,
-                color='tab:blue',
+                color="tab:blue",
             )
 
-        ax[1].set_ylabel('Velocity')
+        ax[1].set_ylabel("Velocity")
         ax[1].set_xlim((0, np.max([np.max(t1), np.max(t2)])))
         ax[1].grid(alpha=0.5)
 
         if pgd_m >= pgd_s:
-            ax[2].plot(t1, u_m[:, 1], label='Measurement', linewidth=0.75)
-            ax[2].plot(t2, u_s[:, 1], label='Simulation', linewidth=0.75)
+            ax[2].plot(t1, u_m[:, 1], label="Measurement", linewidth=0.75)
+            ax[2].plot(t2, u_s[:, 1], label="Simulation", linewidth=0.75)
         else:
             ax[2].plot(
                 t2,
                 u_s[:, 1],
-                label='Simulation',
+                label="Simulation",
                 linewidth=0.75,
-                color='tab:orange',
+                color="tab:orange",
             )
 
             ax[2].plot(
                 t1,
                 u_m[:, 1],
-                label='Measurement',
+                label="Measurement",
                 linewidth=0.75,
-                color='tab:blue',
+                color="tab:blue",
             )
 
-        ax[2].set_ylabel('Displacement')
-        ax[2].set_xlabel('Time (s)')
+        ax[2].set_ylabel("Displacement")
+        ax[2].set_xlabel("Time (s)")
         ax[2].set_xlim((0, np.max([np.max(t1), np.max(t2)])))
         ax[2].grid(alpha=0.5)
 
-        fig.suptitle(r'Time Histories', fontsize=16)
+        fig.suptitle(r"Time Histories", fontsize=16)
 
         plt.tight_layout()
 
@@ -488,7 +464,7 @@ def d_567(
 
 
 def baseline_wavelet(
-        signal: np.ndarray, wavelet_level: int = 6, wavelet_name: str = 'dmey'
+    signal: np.ndarray, wavelet_level: int = 6, wavelet_name: str = "dmey"
 ) -> np.ndarray:
     """
     Perform baseline correction using wavelet decomposition. This function
@@ -581,18 +557,18 @@ def getAbsPeak(x: np.ndarray) -> float:
     elif x.shape[1] == 2:
         peak = np.max(np.abs(x[:, 1]))
     else:
-        raise TypeError('Dimension error.')
+        raise TypeError("Dimension error.")
 
     return peak
 
 
 def d_89(
-        measurement: np.ndarray,
-        simulation: np.ndarray,
-        fmin: float | None = None,
-        fmax: float | None = None,
-        baseline: bool = True,
-        show_fig: bool = False,
+    measurement: np.ndarray,
+    simulation: np.ndarray,
+    fmin: float | None = None,
+    fmax: float | None = None,
+    baseline: bool = True,
+    show_fig: bool = False,
 ) -> tuple[float, float]:
     """
     Calculate the last two goodness-of-fit scores in the GoF scheme
@@ -662,7 +638,7 @@ def d_89(
 
     if fmin >= fmax:
         raise ValueError(
-            f'Error: fmax must be larger than fmin. (fmax={fmax}, fmin={fmin})'
+            f"Error: fmax must be larger than fmin. (fmax={fmax}, fmin={fmin})"
         )
 
     if baseline:
@@ -699,15 +675,19 @@ def d_89(
     FS_m = sp.sine_smooth(ft_m)
     FS_s = sp.sine_smooth(ft_s)
 
-    idx1_FS = np.max((
-        np.min(np.where(farray_m >= fmin)[0]),
-        np.min(np.where(farray_s >= fmin)[0]),
-    ))
+    idx1_FS = np.max(
+        (
+            np.min(np.where(farray_m >= fmin)[0]),
+            np.min(np.where(farray_s >= fmin)[0]),
+        )
+    )
     idx2_FS = (
-        np.min((
-            np.max(np.where(farray_m <= fmax)[0]),
-            np.max(np.where(farray_s <= fmax)[0]),
-        ))
+        np.min(
+            (
+                np.max(np.where(farray_m <= fmax)[0]),
+                np.max(np.where(farray_s <= fmax)[0]),
+            )
+        )
         + 1
     )
 
@@ -724,23 +704,19 @@ def d_89(
             Tn_m[idx1_RS:idx2_RS],
             np.maximum(SA_m[idx1_RS:idx2_RS], SA_s[idx1_RS:idx2_RS]),
             alpha=0.5,
-            color='silver',
-            label='Scored Range',
+            color="silver",
+            label="Scored Range",
         )
-        ax[0].plot(
-            Tn_m, SA_m, label='Measurement', color='tab:blue', linewidth=1.25
-        )
-        ax[0].plot(
-            Tn_s, SA_s, label='Simulation', color='tab:orange', linewidth=1.25
-        )
-        ax[0].set_title(f'Spectral Acceleration (S8): {d8:.2f}')
-        ax[0].set_xscale('log')
+        ax[0].plot(Tn_m, SA_m, label="Measurement", color="tab:blue", linewidth=1.25)
+        ax[0].plot(Tn_s, SA_s, label="Simulation", color="tab:orange", linewidth=1.25)
+        ax[0].set_title(f"Spectral Acceleration (S8): {d8:.2f}")
+        ax[0].set_xscale("log")
         ax[0].set_xlim((np.min(Tn_m), np.max(Tn_m)))
         ax[0].set_ylim(bottom=0.0)
-        ax[0].set_xlabel('Period (s)')
-        ax[0].set_ylabel('Spectral Acceleration')
+        ax[0].set_xlabel("Period (s)")
+        ax[0].set_ylabel("Spectral Acceleration")
         ax[0].grid(alpha=0.5)
-        ax[0].grid(axis='x', which='minor', alpha=0.35, linestyle='--')
+        ax[0].grid(axis="x", which="minor", alpha=0.35, linestyle="--")
         ax[0].legend()
 
         # Fourier amplitude spectrum
@@ -748,33 +724,33 @@ def d_89(
             farray_m[idx1_FS:idx2_FS],
             np.maximum(FS_m[idx1_FS:idx2_FS], FS_s[idx1_FS:idx2_FS]),
             alpha=0.5,
-            color='silver',
-            label='Scored Range',
+            color="silver",
+            label="Scored Range",
         )
         ax[1].plot(
             farray_m,
             FS_m,
-            label='Measurement',
-            color='tab:blue',
+            label="Measurement",
+            color="tab:blue",
             linewidth=1.25,
         )
         ax[1].plot(
             farray_s,
             FS_s,
-            label='Simulation',
-            color='tab:orange',
+            label="Simulation",
+            color="tab:orange",
             linewidth=1.25,
         )
-        ax[1].set_title(f'Fourier Spectra (S9): {d9:.2f}')
-        ax[1].set_xscale('log')
+        ax[1].set_title(f"Fourier Spectra (S9): {d9:.2f}")
+        ax[1].set_xscale("log")
         ax[1].set_xlim((np.min(farray_m), np.max(farray_m)))
         ax[1].set_ylim(bottom=0.0)
-        ax[1].set_xlabel('Frequency (Hz)')
-        ax[1].set_ylabel('Fourier Amplitude Spectrum')
+        ax[1].set_xlabel("Frequency (Hz)")
+        ax[1].set_ylabel("Fourier Amplitude Spectrum")
         ax[1].grid(alpha=0.5)
-        ax[1].grid(axis='x', which='minor', alpha=0.35, linestyle='--')
+        ax[1].grid(axis="x", which="minor", alpha=0.35, linestyle="--")
 
-        fig.suptitle(r'Frequency Content', fontsize=16)
+        fig.suptitle(r"Frequency Content", fontsize=16)
 
         plt.tight_layout()
 
@@ -782,12 +758,12 @@ def d_89(
 
 
 def d_10(
-        measurement: np.ndarray,
-        simulation: np.ndarray,
-        fmin: float | None = None,
-        fmax: float | None = None,
-        baseline: bool = True,
-        show_fig: bool = False,
+    measurement: np.ndarray,
+    simulation: np.ndarray,
+    fmin: float | None = None,
+    fmax: float | None = None,
+    baseline: bool = True,
+    show_fig: bool = False,
 ) -> float:
     """
     Cross-correlation measure of goodness-of-fit, as described in:
@@ -856,13 +832,11 @@ def d_10(
 
     if fmin >= fmax:
         raise ValueError(
-            f'Error: fmax must be larger than fmin. (fmax={fmax}, fmin={fmin})'
+            f"Error: fmax must be larger than fmin. (fmax={fmax}, fmin={fmin})"
         )
 
     if n1 != n2:
-        raise TypeError(
-            'Length of measurement and simulation must be the same.'
-        )
+        raise TypeError("Length of measurement and simulation must be the same.")
 
     numerator = np.sum(a1 * a2) * dt1
 
@@ -879,23 +853,23 @@ def d_10(
         ax.plot(
             t2,
             simulation[:, 1],
-            label='Simulation',
+            label="Simulation",
             linewidth=0.75,
-            color='tab:orange',
+            color="tab:orange",
         )
         ax.plot(
             t1,
             measurement[:, 1],
-            label='Measurement',
+            label="Measurement",
             linewidth=0.75,
-            color='tab:blue',
+            color="tab:blue",
         )
-        ax.set_ylabel('Acceleration')
+        ax.set_ylabel("Acceleration")
         ax.set_xlim((0, np.max([np.max(t1), np.max(t2)])))
         ax.legend()
         ax.grid(alpha=0.5)
 
-        fig.suptitle(r'Time Histories', fontsize=16)
+        fig.suptitle(r"Time Histories", fontsize=16)
 
         plt.tight_layout()
 
@@ -935,9 +909,7 @@ def period_list(li, N):
 
 def circular_convolve_mra(h_j_o, w_j):
     """Calculate the mra D_j. Code from: https://github.com/pistonly/modwtpy"""
-    return convolve1d(
-        w_j, np.flip(h_j_o), mode='wrap', origin=(len(h_j_o) - 1) // 2
-    )
+    return convolve1d(w_j, np.flip(h_j_o), mode="wrap", origin=(len(h_j_o) - 1) // 2)
 
 
 def circular_convolve_d(h_t, v_j_1, j):
@@ -950,7 +922,7 @@ def circular_convolve_d(h_t, v_j_1, j):
     for i, h in enumerate(h_t):
         ker[i * 2 ** (j - 1)] = h
 
-    w_j = convolve1d(v_j_1, ker, mode='wrap', origin=-len(ker) // 2)
+    w_j = convolve1d(v_j_1, ker, mode="wrap", origin=-len(ker) // 2)
     return w_j
 
 

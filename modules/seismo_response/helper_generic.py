@@ -39,14 +39,14 @@ def get_current_time(for_filename: bool = True) -> str:
         The current time as a string (such as "2001-01-01 23:59:59")
     """
     if for_filename:
-        return datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
+        return datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
-    return datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
 
 def find_closest_index(
-        array: np.ndarray,
-        value: float,
+    array: np.ndarray,
+    value: float,
 ) -> tuple[int | None, float | None]:
     """
     Find the index in ``array`` corresponding to the value closest to the
@@ -72,9 +72,9 @@ def find_closest_index(
     TypeError
         When ``value`` is not a single number
     """
-    assert_1D_numpy_array(array, name='`array`')
+    assert_1D_numpy_array(array, name="`array`")
     if not isinstance(value, (int, float, np.number)):
-        raise TypeError('`value` must be a single number (such as a float).')
+        raise TypeError("`value` must be a single number (such as a float).")
 
     if len(array) == 0:
         index = None
@@ -88,20 +88,20 @@ def find_closest_index(
 
 
 def _process_fig_ax_objects(
-        fig: Figure | None,
-        ax: Axes | None,
-        figsize: tuple[float, float] | None = None,
-        dpi: float | None = None,
-        ax_proj: Literal[
-            None,
-            'aitoff',
-            'hammer',
-            'lambert',
-            'mollweide',
-            'polar',
-            'rectilinear',
-        ] = None,
-        bypass_ax_creation: bool = False,
+    fig: Figure | None,
+    ax: Axes | None,
+    figsize: tuple[float, float] | None = None,
+    dpi: float | None = None,
+    ax_proj: Literal[
+        None,
+        "aitoff",
+        "hammer",
+        "lambert",
+        "mollweide",
+        "polar",
+        "rectilinear",
+    ] = None,
+    bypass_ax_creation: bool = False,
 ) -> tuple[Figure, Axes]:
     """
     Process figure and axes objects. If ``fig`` and ``ax`` are None, creates
@@ -150,10 +150,10 @@ def _process_fig_ax_objects(
 
 
 def read_two_column_stuff(
-        data: str | np.ndarray,
-        delta: float | None = None,
-        sep: str = '\t',
-        **kwargs_to_genfromtxt: dict[Any, Any],
+    data: str | np.ndarray,
+    delta: float | None = None,
+    sep: str = "\t",
+    **kwargs_to_genfromtxt: dict[Any, Any],
 ) -> tuple[np.ndarray, float]:
     """
     Process "data" into a two-columned "data_".
@@ -198,12 +198,12 @@ def read_two_column_stuff(
     elif isinstance(data, np.ndarray):
         data_ = data
     else:
-        raise TypeError('`data` must be a file name or a numpy array.')
+        raise TypeError("`data` must be a file name or a numpy array.")
 
     if data_.ndim == 1 or (data_.ndim == 2 and min(data_.shape) == 1):
         if delta is None:
             raise ValueError(
-                '`delta` (such as dt or df) is needed for one-column `data`.',
+                "`delta` (such as dt or df) is needed for one-column `data`.",
             )
 
         n = len(data_)
@@ -215,8 +215,8 @@ def read_two_column_stuff(
         delta = col1[1] - col1[0]
     elif data_.shape[1] != 2:  # noqa: R506
         raise TypeError(
-            'The provided data should be a two-column 2D numpy '
-            'array, or a one-column array with a `delta` value.',
+            "The provided data should be a two-column 2D numpy "
+            "array, or a one-column array with a `delta` value.",
         )
     else:
         raise TypeError('"data" must be a file name or a numpy array.')
@@ -241,14 +241,14 @@ def assert_1D_numpy_array(something: Any, name: str | None = None) -> None:
         ``something`` is not a 1D numpy array
     """
     if not isinstance(something, np.ndarray) or something.ndim != 1:
-        name = '`something`' if name is None else name
-        raise TypeError('%s must be a 1D numpy array.' % name)
+        name = "`something`" if name is None else name
+        raise TypeError("%s must be a 1D numpy array." % name)
 
 
 def assert_array_length(
-        something: Any,
-        length: int | None,
-        name: str = '`something`',
+    something: Any,
+    length: int | None,
+    name: str = "`something`",
 ) -> None:
     """
     Assert that ``something`` is a 1D of length ``length``.
@@ -270,14 +270,13 @@ def assert_array_length(
     assert_1D_numpy_array(something, name=name)
     if len(something) != length:
         raise ValueError(
-            '%s must have length %d, but not %d.'
-            % (name, length, len(something)),
+            "%s must have length %d, but not %d." % (name, length, len(something)),
         )
 
 
 def extend_scalar(
-        scalar: float | int | np.number,
-        length: int,
+    scalar: float | int | np.number,
+    length: int,
 ) -> np.ndarray:
     """
     "Extend" a scalar (float, int, or numpy.number type) into a 1D numpy array
@@ -301,18 +300,16 @@ def extend_scalar(
         When ``scalar`` is not of a supported type
     """
     if not isinstance(scalar, (float, int, np.number)):
-        raise TypeError(
-            '`scalar` must be a float, int, or a numpy.number type.'
-        )
+        raise TypeError("`scalar` must be a float, int, or a numpy.number type.")
 
     array = scalar * np.ones(length)
     return array
 
 
 def check_length_or_extend_to_array(
-        something: Any,
-        length: int,
-        name: str = '`something`',
+    something: Any,
+    length: int,
+    name: str = "`something`",
 ) -> np.ndarray:
     """
     Check that ``something`` is a 1D numpy array with length ``length``, or
@@ -360,15 +357,15 @@ def assert_2D_numpy_array(something: Any, name: str | None = None) -> None:
         When ``something`` is not a 2D numpy array
     """
     if not isinstance(something, np.ndarray) or something.ndim != 2:
-        name = '`something`' if name is None else name
-        raise TypeError('%s must be a 2D numpy array.' % name)
+        name = "`something`" if name is None else name
+        raise TypeError("%s must be a 2D numpy array." % name)
 
 
 def check_two_column_format(
-        something: Any,
-        name: str | None = None,
-        ensure_non_negative: bool = False,
-        at_least_two_columns: bool = False,
+    something: Any,
+    name: str | None = None,
+    ensure_non_negative: bool = False,
+    at_least_two_columns: bool = False,
 ) -> None:
     """
     Check that ``something`` is a 2D numpy array with two columns. Raises an
@@ -394,29 +391,29 @@ def check_two_column_format(
         When the input has unexpected value
     """
     if name is None:
-        name = '`something`'
+        name = "`something`"
 
     if not isinstance(something, np.ndarray):
-        raise TypeError('%s should be a numpy array.' % name)
+        raise TypeError("%s should be a numpy array." % name)
 
     if something.ndim != 2:
-        raise TypeError('%s should be a 2D numpy array.' % name)
+        raise TypeError("%s should be a 2D numpy array." % name)
 
     if not at_least_two_columns and something.shape[1] != 2:
-        raise TypeError('%s should have two columns.' % name)
+        raise TypeError("%s should have two columns." % name)
 
     if at_least_two_columns and something.shape[1] < 2:
-        raise TypeError('%s should have >= 2 columns.' % name)
+        raise TypeError("%s should have >= 2 columns." % name)
 
     check_status = check_numbers_valid(something)
     if check_status == -1:
-        raise ValueError('%s should only contain numeric elements.' % name)
+        raise ValueError("%s should only contain numeric elements." % name)
 
     if check_status == -2:
-        raise ValueError('%s should contain no NaN values.' % name)
+        raise ValueError("%s should contain no NaN values." % name)
 
     if ensure_non_negative and check_status == -3:
-        raise ValueError('%s should have all non-negative values.' % name)
+        raise ValueError("%s should have all non-negative values." % name)
 
 
 def check_Vs_profile_format(data: Any) -> None:
@@ -437,57 +434,53 @@ def check_Vs_profile_format(data: Any) -> None:
         When the input has unexpected value
     """
     if not isinstance(data, np.ndarray):
-        raise TypeError('`data` should be a numpy array.')
+        raise TypeError("`data` should be a numpy array.")
 
     check_status = check_numbers_valid(data)
     if check_status == -1:
-        raise ValueError('`data` should only contain numeric elements.')
+        raise ValueError("`data` should only contain numeric elements.")
 
     if check_status == -2:
-        raise ValueError('`data` should contain no NaN values.')
+        raise ValueError("`data` should contain no NaN values.")
 
     if data.ndim != 2:
-        raise ValueError('`data` should be a 2D numpy array.')
+        raise ValueError("`data` should be a 2D numpy array.")
 
     if data.shape[1] not in [2, 5]:
-        raise ValueError('`data` should have either 2 or 5 columns.')
+        raise ValueError("`data` should have either 2 or 5 columns.")
 
     thk = data[:, 0]
     Vs = data[:, 1]
     if np.any(thk[:-1] <= 0):
         raise ValueError(
-            'The thickness column should be all positive, except for the last layer.',
+            "The thickness column should be all positive, except for the last layer.",
         )
 
     if np.any(thk[-1] < 0):
-        raise ValueError('The last layer thickness should be non-negative.')
+        raise ValueError("The last layer thickness should be non-negative.")
 
     if np.any(Vs <= 0):
-        raise ValueError('The Vs column should be all positive.')
+        raise ValueError("The Vs column should be all positive.")
 
     if data.shape[1] == 5:
         xi = data[:, 2]
         rho = data[:, 3]
         mat = data[:, 4]
         if np.any(xi <= 0) or np.any(rho <= 0):
-            raise ValueError(
-                'The damping and density columns should be positive.'
-            )
+            raise ValueError("The damping and density columns should be positive.")
 
         if not all(is_int(_) for _ in mat):
-            raise ValueError(
-                'The "material number" column should be all integers.'
-            )
+            raise ValueError('The "material number" column should be all integers.')
 
         if np.any(mat[:-1] <= 0):
             raise ValueError(
                 'The "material number" column should be all '
-                'positive, except for the last error.',
+                "positive, except for the last error.",
             )
 
         if np.any(mat[-1] < 0):
             raise ValueError(
-                'The material number of the last layer should be non-negative.',
+                "The material number of the last layer should be non-negative.",
             )
 
 
@@ -549,13 +542,13 @@ def check_numbers_valid(array: np.ndarray) -> int:
 
 
 def interpolate(
-        x_query_min: float,
-        x_query_max: float,
-        n_pts: int,
-        x_ref: np.ndarray,
-        y_ref: np.ndarray,
-        log_scale: bool = True,
-        **kwargs_to_interp: dict[Any, Any],
+    x_query_min: float,
+    x_query_max: float,
+    n_pts: int,
+    x_ref: np.ndarray,
+    y_ref: np.ndarray,
+    log_scale: bool = True,
+    **kwargs_to_interp: dict[Any, Any],
 ) -> tuple[np.ndarray, np.ndarray]:
     """
     Interpolate data (``x_ref`` and ``y_ref``) at x query points defined by
@@ -597,8 +590,8 @@ def interpolate(
     else:
         x_query_array = np.linspace(x_query_min, x_query_max, n_pts)
 
-    assert_1D_numpy_array(x_ref, name='`x_ref`')
-    assert_1D_numpy_array(y_ref, name='`y_ref`')
+    assert_1D_numpy_array(x_ref, name="`x_ref`")
+    assert_1D_numpy_array(y_ref, name="`y_ref`")
     y_query_array = np.interp(x_query_array, x_ref, y_ref, **kwargs_to_interp)
 
     return x_query_array, y_query_array
@@ -620,15 +613,15 @@ def mean_absolute_error(y_true: np.ndarray, y_pred: np.ndarray) -> float:
     mse : float
         Mean squared error.
     """
-    assert_1D_numpy_array(y_true, name='`y_true`')
-    assert_1D_numpy_array(y_pred, name='`y_pred`')
+    assert_1D_numpy_array(y_true, name="`y_true`")
+    assert_1D_numpy_array(y_pred, name="`y_pred`")
     mae = np.mean(np.abs(y_true - y_pred))
     return mae
 
 
 def extract_from_curve_format(
-        curves: np.ndarray,
-        ensure_non_negative: bool = True,
+    curves: np.ndarray,
+    ensure_non_negative: bool = True,
 ) -> tuple[list[np.ndarray], list[np.ndarray]]:
     """
     Extract G/Gmax and damping curves from a "curve formatted" 2D numpy array.
@@ -671,15 +664,15 @@ def extract_from_curve_format(
         When the input has unexpected value
     """
     if not isinstance(curves, np.ndarray):
-        raise TypeError('`curves` needs to be a numpy array.')
+        raise TypeError("`curves` needs to be a numpy array.")
 
     if curves.ndim != 2:
-        raise TypeError('If `curves` is a numpy array, it needs to be 2D.')
+        raise TypeError("If `curves` is a numpy array, it needs to be 2D.")
 
     if curves.shape[1] % 4 != 0:
         raise ValueError(
-            'If `curves` is a numpy array, its number of '
-            'columns needs to be a multiple of 4.',
+            "If `curves` is a numpy array, its number of "
+            "columns needs to be a multiple of 4.",
         )
 
     n_layer = curves.shape[1] // 4
@@ -691,12 +684,12 @@ def extract_from_curve_format(
         damping = curves[:, j * 4 + 2 : j * 4 + 4]
         check_two_column_format(
             GGmax,
-            name='G/Gmax curve for layer #%d' % j,
+            name="G/Gmax curve for layer #%d" % j,
             ensure_non_negative=ensure_non_negative,
         )
         check_two_column_format(
             damping,
-            name='Damping curve for layer #%d' % j,
+            name="Damping curve for layer #%d" % j,
             ensure_non_negative=ensure_non_negative,
         )
         GGmax_curves_list.append(GGmax)
@@ -740,7 +733,7 @@ def extract_from_param_format(params: np.ndarray) -> list[np.ndarray]:
         When the input has invalid types
     """
     if not isinstance(params, np.ndarray) or params.ndim != 2:
-        raise TypeError('`params` needs to be a 2D numpy array.')
+        raise TypeError("`params` needs to be a 2D numpy array.")
 
     n_layer = params.shape[1]
     param_list = []
@@ -750,9 +743,7 @@ def extract_from_param_format(params: np.ndarray) -> list[np.ndarray]:
     return param_list
 
 
-def merge_curve_matrices(
-        GGmax_matrix: np.ndarray, xi_matrix: np.ndarray
-) -> np.ndarray:
+def merge_curve_matrices(GGmax_matrix: np.ndarray, xi_matrix: np.ndarray) -> np.ndarray:
     """
     Merge G/Gmax curves matrix and damping curves matrix. Both matrices need to
     have the following format:
@@ -784,36 +775,36 @@ def merge_curve_matrices(
     ValueError
         When the input has invalid values
     """
-    assert_2D_numpy_array(GGmax_matrix, name='`GGmax_matrix`')
-    assert_2D_numpy_array(xi_matrix, name='`xi_matrix`')
+    assert_2D_numpy_array(GGmax_matrix, name="`GGmax_matrix`")
+    assert_2D_numpy_array(xi_matrix, name="`xi_matrix`")
     if GGmax_matrix.shape[1] % 4 != 0:
         raise ValueError(
-            'The number of columns of `GGmax_matrix` needs '
-            'to be a multiple of 4. However, your '
-            '`GGmax_matrix` has %d columns.' % GGmax_matrix.shape[1],
+            "The number of columns of `GGmax_matrix` needs "
+            "to be a multiple of 4. However, your "
+            "`GGmax_matrix` has %d columns." % GGmax_matrix.shape[1],
         )
 
     if xi_matrix.shape[1] % 4 != 0:
         raise ValueError(
-            'The number of columns of `xi_matrix` needs '
-            'to be a multiple of 4. However, your '
-            '`xi_matrix` has %d columns.' % xi_matrix.shape[1],
+            "The number of columns of `xi_matrix` needs "
+            "to be a multiple of 4. However, your "
+            "`xi_matrix` has %d columns." % xi_matrix.shape[1],
         )
 
     if GGmax_matrix.shape[1] != xi_matrix.shape[1]:
         raise ValueError(
-            '`GGmax_matrix` and `xi_matrix` need to have the '
-            'same number of columns. You can use trim one or both'
-            'of them outside this function to make the shape '
-            'identical. Sorry for the inconvenience.',
+            "`GGmax_matrix` and `xi_matrix` need to have the "
+            "same number of columns. You can use trim one or both"
+            "of them outside this function to make the shape "
+            "identical. Sorry for the inconvenience.",
         )
 
     if GGmax_matrix.shape[0] != xi_matrix.shape[0]:
         raise ValueError(
-            '`GGmax_matrix` and `xi_matrix` need to have the '
-            'same number of rows. You can use interpolation '
-            'outside of this function to make the lengths '
-            'identical. Sorry for the inconvenience.',
+            "`GGmax_matrix` and `xi_matrix` need to have the "
+            "same number of rows. You can use interpolation "
+            "outside of this function to make the lengths "
+            "identical. Sorry for the inconvenience.",
         )
 
     n_layer = GGmax_matrix.shape[1] // 4

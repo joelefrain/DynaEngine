@@ -12,16 +12,17 @@ from modules.seismo_response import helper_site_response as sr
 # - serialize_params_to_array (OK)
 # - deserialize_array_to_params (OK)
 
+
 def tau_GQH(
-        gamma: np.ndarray,
-        *,
-        gamma_ref: float,
-        theta_1: float,
-        theta_2: float,
-        theta_3: float = 1,
-        theta_4: float = 1,
-        theta_5: float,
-        Gmax: float,
+    gamma: np.ndarray,
+    *,
+    gamma_ref: float,
+    theta_1: float,
+    theta_2: float,
+    theta_3: float = 1,
+    theta_4: float = 1,
+    theta_5: float,
+    Gmax: float,
 ) -> np.ndarray:
     """
     Calculate the GQ/H shear stress. The GQ/H model is proposed in Groholski et al.
@@ -75,13 +76,13 @@ def tau_GQH(
         The shear stress determined by the formula above. Same shape as ``x``,
         and same unit as ``Gmax``.
     """
-    hlp.assert_1D_numpy_array(gamma, name='`gamma`')
-    
-    frac_upper = theta_4 * (gamma / gamma_ref)**theta_5
-    frac_lower = theta_3**theta_5 + theta_4*(gamma / gamma_ref)**theta_5
+    hlp.assert_1D_numpy_array(gamma, name="`gamma`")
+
+    frac_upper = theta_4 * (gamma / gamma_ref) ** theta_5
+    frac_lower = theta_3**theta_5 + theta_4 * (gamma / gamma_ref) ** theta_5
     theta_T = theta_1 + theta_2 * (frac_upper / frac_lower)
 
-    sqrt_argument = (1 + gamma/gamma_ref)**2 - 4 * theta_T * (gamma / gamma_ref)
+    sqrt_argument = (1 + gamma / gamma_ref) ** 2 - 4 * theta_T * (gamma / gamma_ref)
 
     sqrt_term = np.sqrt(np.maximum(sqrt_argument, 0.0))
 
@@ -91,20 +92,20 @@ def tau_GQH(
 
 
 def fit_H4_x_single_layer(
-        damping_data_in_pct: np.ndarray,
-        *,
-        use_scipy: bool = True,
-        pop_size: int = 800,
-        n_gen: int = 100,
-        lower_bound_power: float = -4,
-        upper_bound_power: float = 6,
-        eta: float = 0.1,
-        seed: int = 0,
-        show_fig: bool = False,
-        verbose: bool = False,
-        suppress_warnings: bool = True,
-        parallel: bool = False,
-        n_cores: int | None = None,
+    damping_data_in_pct: np.ndarray,
+    *,
+    use_scipy: bool = True,
+    pop_size: int = 800,
+    n_gen: int = 100,
+    lower_bound_power: float = -4,
+    upper_bound_power: float = 6,
+    eta: float = 0.1,
+    seed: int = 0,
+    show_fig: bool = False,
+    verbose: bool = False,
+    suppress_warnings: bool = True,
+    parallel: bool = False,
+    n_cores: int | None = None,
 ) -> dict[str, float]:
     """
     Perform H4_x curve fitting for one damping curve using the genetic
@@ -197,23 +198,24 @@ def fit_H4_x_single_layer(
     )
 
     best_param = {}
-    best_param['gamma_ref'] = 10 ** result[0]
-    best_param['theta_1'] = 10 ** result[1]
-    best_param['theta_2'] = 10 ** result[2]
-    best_param['theta_3'] = 10 ** result[3]
-    best_param['theta_4'] = 10 ** result[4]
-    best_param['theta_5'] = 10 ** result[5]
-    best_param['Gmax'] = 1.0
+    best_param["gamma_ref"] = 10 ** result[0]
+    best_param["theta_1"] = 10 ** result[1]
+    best_param["theta_2"] = 10 ** result[2]
+    best_param["theta_3"] = 10 ** result[3]
+    best_param["theta_4"] = 10 ** result[4]
+    best_param["theta_5"] = 10 ** result[5]
+    best_param["Gmax"] = 1.0
 
     if show_fig:
         sr._plot_damping_curve_fit(damping_data_in_pct, best_param, tau_GQH)
 
     return best_param
 
+
 # Estoy utilizando parámetros diferentes al MKZ (¿El código seguirá funcionando?)
 def damping_misfit(
-        param_without_Gmax: tuple[float, float, float, float, float, float],
-        damping_data: np.ndarray,
+    param_without_Gmax: tuple[float, float, float, float, float, float],
+    damping_data: np.ndarray,
 ) -> float:
     """
     Calculate the misfit given a set of GQH parameters. Note that the values
@@ -250,15 +252,16 @@ def damping_misfit(
     strain = damping_data[:, 0]
     damping_true = damping_data[:, 1]
 
-    Tau_GQH = tau_GQH(strain, 
-                      gamma_ref=gamma_ref, 
-                      theta_1=theta_1, 
-                      theta_2=theta_2, 
-                      theta_3=theta_3, 
-                      theta_4=theta_4, 
-                      theta_5=theta_5, 
-                      Gmax=Gmax
-                      )
+    Tau_GQH = tau_GQH(
+        strain,
+        gamma_ref=gamma_ref,
+        theta_1=theta_1,
+        theta_2=theta_2,
+        theta_3=theta_3,
+        theta_4=theta_4,
+        theta_5=theta_5,
+        Gmax=Gmax,
+    )
     damping_pred = sr.calc_damping_from_stress_strain(strain, Tau_GQH, Gmax)
     error = hlp.mean_absolute_error(damping_true, damping_pred)
 
@@ -266,8 +269,8 @@ def damping_misfit(
 
 
 def serialize_params_to_array(
-        param: dict[str, float],
-        to_files: bool = False,
+    param: dict[str, float],
+    to_files: bool = False,
 ) -> np.ndarray:
     """
     Convert the GQH parameters from a dictionary to an array, according to this
@@ -292,20 +295,28 @@ def serialize_params_to_array(
         in the order specified above.
     """
     assert len(param) == 7
-    order = ['gamma_ref', 'theta_1', 'theta_2', 'theta_3', 'theta_4', 'theta_5', 'Gmax']
+    order = ["gamma_ref", "theta_1", "theta_2", "theta_3", "theta_4", "theta_5", "Gmax"]
     param_array = []
     for key in order:
         param_array.append(param[key])
 
     if to_files:
-        param_array = [param_array[0], 0.0, param_array[1], param_array[2], param_array[3], param_array[4], param_array[5]]
+        param_array = [
+            param_array[0],
+            0.0,
+            param_array[1],
+            param_array[2],
+            param_array[3],
+            param_array[4],
+            param_array[5],
+        ]
 
     return np.array(param_array)
 
 
 def deserialize_array_to_params(
-        array: np.ndarray,
-        from_files: bool = False,
+    array: np.ndarray,
+    from_files: bool = False,
 ) -> dict[str, float]:
     """
     Reconstruct a GQH model parameter dictionary from an array of values.
@@ -337,31 +348,31 @@ def deserialize_array_to_params(
 
     if from_files:
         param = {}
-        param['gamma_ref'] = array[0]
-        param['theta_1'] = array[2]
-        param['theta_2'] = array[3]
-        param['theta_3'] = array[4]
-        param['theta_4'] = array[5]
-        param['theta_5'] = array[6]
+        param["gamma_ref"] = array[0]
+        param["theta_1"] = array[2]
+        param["theta_2"] = array[3]
+        param["theta_3"] = array[4]
+        param["theta_4"] = array[5]
+        param["theta_5"] = array[6]
 
-        param['Gmax'] = 1.0  # "H4_G_SITE_NAME.txt" files don't have Gmax info
+        param["Gmax"] = 1.0  # "H4_G_SITE_NAME.txt" files don't have Gmax info
     else:
         param = {}
-        param['gamma_ref'] = array[0]
-        param['theta_1'] = array[1]
-        param['theta_2'] = array[2]
-        param['theta_3'] = array[3]
-        param['theta_4'] = array[4]
-        param['theta_5'] = array[5]
-        param['Gmax'] = array[6]
+        param["gamma_ref"] = array[0]
+        param["theta_1"] = array[1]
+        param["theta_2"] = array[2]
+        param["theta_3"] = array[3]
+        param["theta_4"] = array[4]
+        param["theta_5"] = array[5]
+        param["Gmax"] = array[6]
 
     return param
 
 
 def fit_GQH(
-        curve_data: np.ndarray,
-        show_fig: bool = False,
-        verbose: bool = False,
+    curve_data: np.ndarray,
+    show_fig: bool = False,
+    verbose: bool = False,
 ) -> tuple[np.ndarray, np.ndarray]:
     """
     Fit GQH model to G/Gmax curves.
@@ -395,7 +406,7 @@ def fit_GQH(
     """
     from scipy.optimize import curve_fit
 
-    hlp.assert_2D_numpy_array(curve_data, name='`curve_data`')
+    hlp.assert_2D_numpy_array(curve_data, name="`curve_data`")
 
     nr = 109
     fitted_curves = np.zeros((nr, curve_data.shape[1]))
@@ -423,20 +434,20 @@ def fit_GQH(
     # -------------- Curve-fitting, layer by layer -----------------------------
     def func(x, gamma_ref, theta_1, theta_2, theta_3, theta_4, theta_5):
 
-        frac_upper = theta_4 * (x / gamma_ref)**theta_5
-        frac_lower = theta_3**theta_5 + theta_4*(x / gamma_ref)**theta_5
+        frac_upper = theta_4 * (x / gamma_ref) ** theta_5
+        frac_lower = theta_3**theta_5 + theta_4 * (x / gamma_ref) ** theta_5
         theta_T = theta_1 + theta_2 * (frac_upper / frac_lower)
 
-        sqrt_argument = (1 + x/gamma_ref)**2 - 4 * theta_T * (x / gamma_ref)
+        sqrt_argument = (1 + x / gamma_ref) ** 2 - 4 * theta_T * (x / gamma_ref)
 
-        return 2 / [1 + (x / gamma_ref) + sqrt_argument **0.5]
+        return 2 / [1 + (x / gamma_ref) + sqrt_argument**0.5]
 
     if verbose:
-        print('Fitting GQH model to G/Gmax data. Total: %d layers.' % n_ma)
+        print("Fitting GQH model to G/Gmax data. Total: %d layers." % n_ma)
 
     for j in range(n_ma):
         if verbose:
-            print('  Layer #%d' % j)
+            print("  Layer #%d" % j)
 
         x_data = gamma[:, j]
         y_data = GGmax[:, j]
@@ -454,7 +465,9 @@ def fit_GQH(
         theta_4[j] = popt[4]
         theta_5[j] = popt[5]
 
-    param = np.column_stack((ref_strain, np.zeros(n_ma), theta_1, theta_2, theta_3, theta_4, theta_5))
+    param = np.column_stack(
+        (ref_strain, np.zeros(n_ma), theta_1, theta_2, theta_3, theta_4, theta_5)
+    )
 
     # ------------ Calculate the fitted curve ----------------------------------
     for k in range(n_ma):
@@ -482,25 +495,32 @@ def fit_GQH(
             plt.semilogx(
                 gamma[:, k] * 100,
                 GGmax[:, k],
-                ls='-',
-                marker='o',
+                ls="-",
+                marker="o",
                 lw=1.5,
                 alpha=0.8,
-                label='Data points',
+                label="Data points",
             )
             plt.semilogx(
                 gamma_ * 100,
                 GGmax_[:, k],
                 lw=1.5,
-                label='Curve fit',
+                label="Curve fit",
             )
-            plt.xlabel('Shear strain [%]')
-            plt.ylabel('G/Gmax')
-            plt.legend(loc='lower left')
-            plt.grid(ls=':', lw=0.5)
+            plt.xlabel("Shear strain [%]")
+            plt.ylabel("G/Gmax")
+            plt.legend(loc="lower left")
+            plt.grid(ls=":", lw=0.5)
             plt.title(
-                r'$\gamma_{\mathrm{ref}}$ = %.3g, theta_1 = %.3g, theta_2 = %.3g, theta_3 = %.3g, theta_4 = %.3g, theta_5 = %.3g'
-                % (ref_strain[k], theta_1[k], theta_2[k], theta_3[k], theta_4[k], theta_5[k]),
+                r"$\gamma_{\mathrm{ref}}$ = %.3g, theta_1 = %.3g, theta_2 = %.3g, theta_3 = %.3g, theta_4 = %.3g, theta_5 = %.3g"
+                % (
+                    ref_strain[k],
+                    theta_1[k],
+                    theta_2[k],
+                    theta_3[k],
+                    theta_4[k],
+                    theta_5[k],
+                ),
             )
         # END FOR
         plt.tight_layout(pad=0.5, h_pad=0.5, w_pad=0.5)

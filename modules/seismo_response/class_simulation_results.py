@@ -106,90 +106,74 @@ class Simulation_Results:
     time_history_displ: np.ndarray | None
     time_history_stress: np.ndarray | None
     time_history_strain: np.ndarray | None
-    acc_spectrum: np.ndarray | None # New
+    acc_spectrum: np.ndarray | None  # New
     motion_name: str
     output_dir: str
 
     def __init__(
-            self,
-            input_accel: Ground_Motion,
-            accel_on_surface: Ground_Motion,
-            rediscretized_profile: Vs_Profile,
-            *,
-            max_a_v_d: np.ndarray | None = None,
-            max_strain_stress: np.ndarray | None = None,
-            trans_func: Frequency_Spectrum | None = None,
-            trans_func_smoothed: Frequency_Spectrum | None = None,
-            time_history_accel: np.ndarray | None = None,
-            time_history_veloc: np.ndarray | None = None,
-            time_history_displ: np.ndarray | None = None,
-            time_history_stress: np.ndarray | None = None,
-            time_history_strain: np.ndarray | None = None,
-            acc_spectrum: np.ndarray | None = None, # New
-            motion_name: str | None = None,
-            output_dir: str | None = None,
+        self,
+        input_accel: Ground_Motion,
+        accel_on_surface: Ground_Motion,
+        rediscretized_profile: Vs_Profile,
+        *,
+        max_a_v_d: np.ndarray | None = None,
+        max_strain_stress: np.ndarray | None = None,
+        trans_func: Frequency_Spectrum | None = None,
+        trans_func_smoothed: Frequency_Spectrum | None = None,
+        time_history_accel: np.ndarray | None = None,
+        time_history_veloc: np.ndarray | None = None,
+        time_history_displ: np.ndarray | None = None,
+        time_history_stress: np.ndarray | None = None,
+        time_history_strain: np.ndarray | None = None,
+        acc_spectrum: np.ndarray | None = None,  # New
+        motion_name: str | None = None,
+        output_dir: str | None = None,
     ) -> None:
         if not isinstance(input_accel, Ground_Motion):
-            raise TypeError('`input_accel` needs to be of Ground_Motion type.')
+            raise TypeError("`input_accel` needs to be of Ground_Motion type.")
 
         if not isinstance(accel_on_surface, Ground_Motion):
-            raise TypeError(
-                '`accel_on_surface` needs to be of Ground_Motion type.'
-            )
+            raise TypeError("`accel_on_surface` needs to be of Ground_Motion type.")
 
         if not isinstance(rediscretized_profile, Vs_Profile):
-            raise TypeError(
-                '`rediscretized_profile` needs to be of Vs_Profile type.'
-            )
+            raise TypeError("`rediscretized_profile` needs to be of Vs_Profile type.")
 
         if not isinstance(trans_func, (Frequency_Spectrum, type(None))):
             raise TypeError(
-                '`trans_func` needs to be either None or of Frequency_Spectrum type.',
+                "`trans_func` needs to be either None or of Frequency_Spectrum type.",
             )
 
-        if not isinstance(
-            trans_func_smoothed, (Frequency_Spectrum, type(None))
-        ):
+        if not isinstance(trans_func_smoothed, (Frequency_Spectrum, type(None))):
             raise TypeError(
-                '`trans_func_smoothed` should be either None or of Frequency_Spectrum type.',
+                "`trans_func_smoothed` should be either None or of Frequency_Spectrum type.",
             )
 
         n_layer = rediscretized_profile.n_layer
         n_time_pts = accel_on_surface.npts
 
         if time_history_accel is not None:
-            hlp.assert_2D_numpy_array(
-                time_history_accel, '`time_history_accel`'
-            )
+            hlp.assert_2D_numpy_array(time_history_accel, "`time_history_accel`")
             assert time_history_accel.shape == (n_time_pts, n_layer + 1)
 
         if time_history_veloc is not None:
-            hlp.assert_2D_numpy_array(
-                time_history_veloc, '`time_history_veloc`'
-            )
+            hlp.assert_2D_numpy_array(time_history_veloc, "`time_history_veloc`")
             assert time_history_veloc.shape == (n_time_pts, n_layer + 1)
 
         if time_history_displ is not None:
-            hlp.assert_2D_numpy_array(
-                time_history_displ, '`time_history_displ`'
-            )
+            hlp.assert_2D_numpy_array(time_history_displ, "`time_history_displ`")
             assert time_history_displ.shape == (n_time_pts, n_layer + 1)
 
         if time_history_stress is not None:
-            hlp.assert_2D_numpy_array(
-                time_history_stress, '`time_history_stress`'
-            )
+            hlp.assert_2D_numpy_array(time_history_stress, "`time_history_stress`")
             assert time_history_stress.shape == (n_time_pts, n_layer)
 
         if time_history_strain is not None:
-            hlp.assert_2D_numpy_array(
-                time_history_strain, '`time_history_strain`'
-            )
+            hlp.assert_2D_numpy_array(time_history_strain, "`time_history_strain`")
             assert time_history_strain.shape == (n_time_pts, n_layer)
 
         if max_a_v_d is not None and max_strain_stress is not None:
-            hlp.assert_2D_numpy_array(max_a_v_d, '`max_a_v_d`')
-            hlp.assert_2D_numpy_array(max_strain_stress, '`max_strain_stress`')
+            hlp.assert_2D_numpy_array(max_a_v_d, "`max_a_v_d`")
+            hlp.assert_2D_numpy_array(max_strain_stress, "`max_strain_stress`")
             assert max_a_v_d.shape == (n_layer + 1, 4)
             assert max_strain_stress.shape == (n_layer, 3)
         else:  # only when both are not `None` do we consider using them
@@ -198,10 +182,10 @@ class Simulation_Results:
 
         current_time = hlp.get_current_time(for_filename=True)
         if motion_name is None:
-            motion_name = 'accel_%s' % current_time
+            motion_name = "accel_%s" % current_time
 
         if output_dir is None:
-            output_dir = os.path.join('./', 'sim_%s' % current_time)
+            output_dir = os.path.join("./", "sim_%s" % current_time)
 
         self.input_accel = input_accel
         self.accel_on_surface = accel_on_surface

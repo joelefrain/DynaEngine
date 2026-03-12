@@ -59,35 +59,35 @@ class HH_Calibration:
     Tmax_profile: np.ndarray | None
 
     def __init__(
-            self,
-            vs_profile: Vs_Profile,
-            *,
-            GGmax_curves: Multiple_GGmax_Curves | None = None,
-            Tmax_profile: np.ndarray | None = None,
+        self,
+        vs_profile: Vs_Profile,
+        *,
+        GGmax_curves: Multiple_GGmax_Curves | None = None,
+        Tmax_profile: np.ndarray | None = None,
     ) -> None:
         if not isinstance(vs_profile, Vs_Profile):
-            raise TypeError('`vs_profile` must be of type Vs_Profile.')
+            raise TypeError("`vs_profile` must be of type Vs_Profile.")
 
         if GGmax_curves is not None:
             if not isinstance(GGmax_curves, Multiple_GGmax_Curves):
                 raise TypeError(
-                    'If `GGmax_curves` is not `None`, it must be '
-                    'of type Multiple_GGmax_Curves.',
+                    "If `GGmax_curves` is not `None`, it must be "
+                    "of type Multiple_GGmax_Curves.",
                 )
 
             if GGmax_curves.n_layer != vs_profile.n_layer:
                 raise ValueError(
-                    'The number of layers implied in `GGmax_curves` '
-                    'and `vs_profile` must be the same.',
+                    "The number of layers implied in `GGmax_curves` "
+                    "and `vs_profile` must be the same.",
                 )
 
         if Tmax_profile is not None:
-            hlp.assert_1D_numpy_array(Tmax_profile, '`Tmax_profile`')
+            hlp.assert_1D_numpy_array(Tmax_profile, "`Tmax_profile`")
             if len(Tmax_profile) != vs_profile.n_layer:
                 raise ValueError(
-                    'The length of `Tmax_profile` needs to '
-                    'equal to the number of layers (not including '
-                    'the rock half space) in `vs_profile`.',
+                    "The length of `Tmax_profile` needs to "
+                    "equal to the number of layers (not including "
+                    "the rock half space) in `vs_profile`.",
                 )
 
         self.vs_profile = vs_profile
@@ -95,14 +95,14 @@ class HH_Calibration:
         self.Tmax_profile = Tmax_profile
 
     def fit(
-            self,
-            show_fig: bool = False,
-            save_fig: bool = False,
-            fig_output_dir: str | None = None,
-            save_HH_G_file: bool = False,
-            HH_G_file_dir: str | None = None,
-            profile_name: str | None = None,
-            verbose: bool = True,
+        self,
+        show_fig: bool = False,
+        save_fig: bool = False,
+        fig_output_dir: str | None = None,
+        save_HH_G_file: bool = False,
+        HH_G_file_dir: str | None = None,
+        profile_name: str | None = None,
+        verbose: bool = True,
     ) -> HH_Param_Multi_Layer:
         """
         Calculate the HH parameters with the given Vs profile and/or G/Gmax
@@ -138,22 +138,20 @@ class HH_Calibration:
         """
         vs_profile = self.vs_profile.vs_profile
         options = {
-            'Tmax': self.Tmax_profile,
-            'show_fig': show_fig,
-            'save_fig': save_fig,
-            'fig_output_dir': fig_output_dir,
-            'save_HH_G_file': save_HH_G_file,
-            'HH_G_file_dir': HH_G_file_dir,
-            'profile_name': profile_name,
-            'verbose': verbose,
+            "Tmax": self.Tmax_profile,
+            "show_fig": show_fig,
+            "save_fig": save_fig,
+            "fig_output_dir": fig_output_dir,
+            "save_HH_G_file": save_HH_G_file,
+            "HH_G_file_dir": HH_G_file_dir,
+            "profile_name": profile_name,
+            "verbose": verbose,
         }
         if self.GGmax_curves is None:
             HH_G_param_ = hhc.hh_param_from_profile(vs_profile, **options)
         else:
             curves = self.GGmax_curves.get_curve_matrix()
-            HH_G_param_ = hhc.hh_param_from_curves(
-                vs_profile, curves, **options
-            )
+            HH_G_param_ = hhc.hh_param_from_curves(vs_profile, curves, **options)
 
         HH_G_param = HH_Param_Multi_Layer(HH_G_param_)
         return HH_G_param

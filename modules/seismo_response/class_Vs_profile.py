@@ -92,18 +92,17 @@ class Vs_Profile:
     n_layer: int
 
     def __init__(
-            self,
-            data: str | np.ndarray,
-            *,
-            damping_unit: Literal['1', '%'] = '1',
-            # fmt: off
-            density_unit: Literal['kg/m^3', 'g/cm^3', 'kg/m3', 'g/cm3'] = 'kg/m^3',
-
-            # fmt: on
-            sep: str = '\t',
-            add_halfspace: bool = False,
-            xi_rho_formula: Literal[1, 2, 3] = 3,
-            **kwargs_to_genfromtxt: dict[Any, Any],
+        self,
+        data: str | np.ndarray,
+        *,
+        damping_unit: Literal["1", "%"] = "1",
+        # fmt: off
+        density_unit: Literal["kg/m^3", "g/cm^3", "kg/m3", "g/cm3"] = "kg/m^3",
+        # fmt: on
+        sep: str = "\t",
+        add_halfspace: bool = False,
+        xi_rho_formula: Literal[1, 2, 3] = 3,
+        **kwargs_to_genfromtxt: dict[Any, Any],
     ) -> None:
         if isinstance(data, str):  # "data" is a file name
             self._path_name, self._file_name = os.path.split(data)
@@ -112,14 +111,14 @@ class Vs_Profile:
             data_ = data
             self._path_name, self._file_name = None, None
         else:
-            raise TypeError('`data` must be a file name or a numpy array.')
+            raise TypeError("`data` must be a file name or a numpy array.")
 
         hlp.check_Vs_profile_format(data_)
 
-        if damping_unit not in ['1', '%']:
+        if damping_unit not in ["1", "%"]:
             raise ValueError("`damping_unit` must be '1' or '%'.")
 
-        if density_unit not in ['kg/m^3', 'g/cm^3', 'kg/m3', 'g/cm3']:
+        if density_unit not in ["kg/m^3", "g/cm^3", "kg/m3", "g/cm3"]:
             raise ValueError("`density_unit` must be 'kg/m^3' or 'g/cm^3'.")
 
         thk = data_[:, 0]
@@ -136,44 +135,44 @@ class Vs_Profile:
             # If surface layer has a thickness less than 1.0 meter
             if thk[0] < 1.0:
                 print(
-                    'Warning in initializing Vs_Profile: surface layer '
-                    f'thickness lower than 1.0 m (user provided = {thk[0]}).',
-                    'May result in unrealistic surface layer overburden pressure.',
+                    "Warning in initializing Vs_Profile: surface layer "
+                    f"thickness lower than 1.0 m (user provided = {thk[0]}).",
+                    "May result in unrealistic surface layer overburden pressure.",
                 )
 
             full_data = np.column_stack((thk, vs, xi, rho, material_number))
         elif n_col == 5:
             xi = data_[:, 2]
             rho = data_[:, 3]
-            if density_unit in ['kg/m^3', 'kg/m3'] and min(rho) <= 1000:
+            if density_unit in ["kg/m^3", "kg/m3"] and min(rho) <= 1000:
                 print(
-                    'Warning in initializing Vs_Profile: min(density) is '
-                    'lower than 1,000 kg/m^3. Possible error.',
+                    "Warning in initializing Vs_Profile: min(density) is "
+                    "lower than 1,000 kg/m^3. Possible error.",
                 )
-            elif density_unit in ['g/cm^3', 'g/cm3'] and min(rho) <= 1.0:
+            elif density_unit in ["g/cm^3", "g/cm3"] and min(rho) <= 1.0:
                 print(
-                    'Warning in initializing Vs_Profile: min(density) is '
-                    'lower than 1.0 g/cm^3. Possible error.',
-                )
-
-            if damping_unit == '1' and max(xi) > 1:
-                print(
-                    'Warning in initializing Vs_Profile: max(damping) '
-                    'larger than 100%. Possible error.',
+                    "Warning in initializing Vs_Profile: min(density) is "
+                    "lower than 1.0 g/cm^3. Possible error.",
                 )
 
-            if density_unit in ['g/cm^3', 'g/cm3']:
+            if damping_unit == "1" and max(xi) > 1:
+                print(
+                    "Warning in initializing Vs_Profile: max(damping) "
+                    "larger than 100%. Possible error.",
+                )
+
+            if density_unit in ["g/cm^3", "g/cm3"]:
                 data_[:, 3] *= 1000.0  # g/cm^3 --> kg/m^3
 
-            if damping_unit == '%':
+            if damping_unit == "%":
                 data_[:, 2] /= 100.0  # percent --> 1
 
             material_number = data_[:, 4]
             full_data = data_.copy()
         else:
             raise ValueError(
-                'The dimension of the input data is wrong. It '
-                'should have two or five columns.',
+                "The dimension of the input data is wrong. It "
+                "should have two or five columns.",
             )
 
         if add_halfspace and thk[-1] != 0:
@@ -198,31 +197,39 @@ class Vs_Profile:
 
     def __repr__(self) -> str:
         """Define a presentation of the basic info of a Vs profile."""
-        text = '\n----------+----------+-------------+------------------+--------------\n'
-        text += '  Thk [m] | Vs [m/s] | Damping [%] | Density [kg/m^3] | Material No. \n'
-        text += '----------+----------+-------------+------------------+--------------\n'
+        text = (
+            "\n----------+----------+-------------+------------------+--------------\n"
+        )
+        text += (
+            "  Thk [m] | Vs [m/s] | Damping [%] | Density [kg/m^3] | Material No. \n"
+        )
+        text += (
+            "----------+----------+-------------+------------------+--------------\n"
+        )
 
         n_layer_all, _ = self.vs_profile.shape
         for j in range(n_layer_all):
-            text += '{:^10}|'.format('%.2f' % self.vs_profile[j, 0])
-            text += '{:^10}|'.format('%.1f' % self.vs_profile[j, 1])
-            text += '{:^13}|'.format('%.3f' % (self.vs_profile[j, 2] * 100.0))
-            text += '{:^18}|'.format('%.1f' % self.vs_profile[j, 3])
-            text += '{:^14}'.format('%d' % self.vs_profile[j, 4])
-            text += '\n'
+            text += "{:^10}|".format("%.2f" % self.vs_profile[j, 0])
+            text += "{:^10}|".format("%.1f" % self.vs_profile[j, 1])
+            text += "{:^13}|".format("%.3f" % (self.vs_profile[j, 2] * 100.0))
+            text += "{:^18}|".format("%.1f" % self.vs_profile[j, 3])
+            text += "{:^14}".format("%d" % self.vs_profile[j, 4])
+            text += "\n"
 
-        text += '----------+----------+-------------+------------------+--------------\n'
-        text += '\n(Vs30 = %.1f m/s)\n' % self.vs30
+        text += (
+            "----------+----------+-------------+------------------+--------------\n"
+        )
+        text += "\n(Vs30 = %.1f m/s)\n" % self.vs30
 
         return text
 
     def plot(
-            self,
-            fig: Figure | None = None,
-            ax: Axes | None = None,
-            figsize: tuple[float, float] = (2.6, 3.2),
-            dpi: float = 100,
-            **kwargs: dict[Any, Any],
+        self,
+        fig: Figure | None = None,
+        ax: Axes | None = None,
+        figsize: tuple[float, float] = (2.6, 3.2),
+        dpi: float = 100,
+        **kwargs: dict[Any, Any],
     ) -> tuple[Figure, Axes, Line2D]:
         """
         Plot Vs profile.
@@ -254,9 +261,9 @@ class Vs_Profile:
         """
         if self._file_name:
             title_text = self._file_name
-        elif 'title' in kwargs:
-            title_text = kwargs['title']
-            kwargs.pop('title')
+        elif "title" in kwargs:
+            title_text = kwargs["title"]
+            kwargs.pop("title")
         else:
             title_text = None
 
@@ -272,10 +279,10 @@ class Vs_Profile:
         return fig, ax, hl
 
     def get_ampl_function(
-            self,
-            show_fig: bool = False,
-            freq_resolution: float = 0.05,
-            fmax: float = 30.0,
+        self,
+        show_fig: bool = False,
+        freq_resolution: float = 0.05,
+        fmax: float = 30.0,
     ) -> tuple[Frequency_Spectrum, Frequency_Spectrum, Frequency_Spectrum]:
         """
         Get amplification function of the Vs profile.
@@ -310,10 +317,10 @@ class Vs_Profile:
         return af_RO, af_BH, af_IN
 
     def get_transfer_function(
-            self,
-            show_fig: bool = False,
-            freq_resolution: float = 0.05,
-            fmax: float = 30.0,
+        self,
+        show_fig: bool = False,
+        freq_resolution: float = 0.05,
+        fmax: float = 30.0,
     ) -> tuple[Frequency_Spectrum, Frequency_Spectrum, Frequency_Spectrum]:
         """
         Get transfer function (complex-valued) of the Vs profile.
@@ -381,9 +388,7 @@ class Vs_Profile:
         """
         return sr.thk2dep(self._thk)
 
-    def truncate(
-            self, depth: float | None = None, Vs: float = 1000.0
-    ) -> Vs_Profile:
+    def truncate(self, depth: float | None = None, Vs: float = 1000.0) -> Vs_Profile:
         """
         Truncate Vs profile at a given ``depth``, and "glue" the truncated
         profile to a given ``Vs``.
@@ -407,10 +412,10 @@ class Vs_Profile:
             When the value of the input argument is incorrect or invalid
         """
         if depth is None or depth <= 0:
-            raise ValueError('`depth` needs to be a positive number.')
+            raise ValueError("`depth` needs to be a positive number.")
 
         if Vs is None or Vs <= 0:
-            raise ValueError('`Vs` needs to be a positive number.')
+            raise ValueError("`Vs` needs to be a positive number.")
 
         profile_ = []
         total_depth = 0
@@ -443,10 +448,10 @@ class Vs_Profile:
         return Vs_Profile(profile_)
 
     def query_Vs_at_depth(
-            self,
-            depth: float | np.ndarray,
-            as_profile: bool = False,
-            show_fig: bool = False,
+        self,
+        depth: float | np.ndarray,
+        as_profile: bool = False,
+        show_fig: bool = False,
     ) -> float | np.ndarray | Vs_Profile:
         """
         Query Vs values at given ``depth`` values. If the given depth values
@@ -487,14 +492,14 @@ class Vs_Profile:
         if as_profile:
             if not is_sorted:
                 raise ValueError(
-                    'If `as_profile` is set to True, the given '
-                    '`depth` needs to be monotonically increasing.',
+                    "If `as_profile` is set to True, the given "
+                    "`depth` needs to be monotonically increasing.",
                 )
 
             if has_duplicate_values:
                 raise ValueError(
-                    'If `as_profile` is set to True, the given '
-                    '`depth` should not contain duplicate values.',
+                    "If `as_profile` is set to True, the given "
+                    "`depth` should not contain duplicate values.",
                 )
 
         if as_profile:
@@ -508,7 +513,7 @@ class Vs_Profile:
 
             if show_fig:
                 fig, ax, _ = self.plot()
-                sr.plot_Vs_profile(vs_, fig=fig, ax=ax, c='orange', alpha=0.75)
+                sr.plot_Vs_profile(vs_, fig=fig, ax=ax, c="orange", alpha=0.75)
 
             # A halfspace is already implicitly added by sr.depth2thk()
             return Vs_Profile(vs_, add_halfspace=False)
@@ -522,13 +527,13 @@ class Vs_Profile:
         return vs_queried
 
     def query_Vs_given_thk(
-            self,
-            thk: float | np.ndarray,
-            n_layers: int | None = None,
-            as_profile: bool = False,
-            at_midpoint: bool = True,
-            add_halfspace: bool = True,
-            show_fig: bool = False,
+        self,
+        thk: float | np.ndarray,
+        n_layers: int | None = None,
+        as_profile: bool = False,
+        at_midpoint: bool = True,
+        add_halfspace: bool = True,
+        show_fig: bool = False,
     ) -> np.ndarray | Vs_Profile:
         """
         Query Vs values from a thickness layer ``thk``. The starting point of
@@ -582,15 +587,15 @@ class Vs_Profile:
         vs_ = np.column_stack((thk_array, vs_queried))
         if show_fig:
             fig, ax, _ = self.plot()
-            sr.plot_Vs_profile(vs_, fig=fig, ax=ax, c='orange', alpha=0.75)
+            sr.plot_Vs_profile(vs_, fig=fig, ax=ax, c="orange", alpha=0.75)
 
         return Vs_Profile(vs_, add_halfspace=add_halfspace)
 
     def _plot_queried_Vs(
-            self,
-            vs_queried: float | np.ndarray,
-            depth: float | np.ndarray,
-            dpi: float = 100,
+        self,
+        vs_queried: float | np.ndarray,
+        depth: float | np.ndarray,
+        dpi: float = 100,
     ) -> None:
         """
         Plot the queried Vs values on top of the Vs profile.
@@ -605,7 +610,7 @@ class Vs_Profile:
             The resolution of the plot
         """
         fig, ax, _ = self.plot(dpi=dpi)
-        ax.plot(vs_queried, depth, c='red', marker='o', ls='', alpha=0.55)
+        ax.plot(vs_queried, depth, c="red", marker="o", ls="", alpha=0.55)
         y_lim = ax.get_ylim()
         if np.max(y_lim) <= np.max(depth):
             ax.set_ylim((np.max(depth), np.min(y_lim)))
@@ -674,16 +679,16 @@ class Vs_Profile:
         self.plot()
 
     def to_txt(
-            self,
-            fname: str,
-            sep: str = '\t',
-            precision: tuple[str, str, str, str, str] = (
-                '%.2f',
-                '%.2f',
-                '%.4g',
-                '%.5g',
-                '%d',
-            ),
+        self,
+        fname: str,
+        sep: str = "\t",
+        precision: tuple[str, str, str, str, str] = (
+            "%.2f",
+            "%.2f",
+            "%.4g",
+            "%.5g",
+            "%d",
+        ),
     ) -> None:
         """
         Write Vs profile to a text file.
@@ -706,9 +711,9 @@ class Vs_Profile:
             When the length of ``precision`` is not 5
         """
         if not isinstance(precision, list):
-            raise TypeError('precision must be a list.')
+            raise TypeError("precision must be a list.")
 
         if len(precision) != 5:
-            raise ValueError('Length of precision must be 5.')
+            raise ValueError("Length of precision must be 5.")
 
         np.savetxt(fname, self.vs_profile, fmt=precision, delimiter=sep)

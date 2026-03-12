@@ -64,27 +64,25 @@ class Site_Effect_Adjustment:
     site_factor: Site_Factors
 
     def __init__(
-            self,
-            input_motion: Ground_Motion,
-            Vs30_in_meter_per_sec: float,
-            z1_in_m: float | None = None,
-            ampl_method: Literal['nl_hh', 'eq_hh'] = 'nl_hh',
-            lenient: bool = False,
+        self,
+        input_motion: Ground_Motion,
+        Vs30_in_meter_per_sec: float,
+        z1_in_m: float | None = None,
+        ampl_method: Literal["nl_hh", "eq_hh"] = "nl_hh",
+        lenient: bool = False,
     ) -> None:
         if not isinstance(input_motion, Ground_Motion):
-            raise TypeError('`input_motion` must be of class `Ground_Motion`.')
+            raise TypeError("`input_motion` must be of class `Ground_Motion`.")
 
         if not isinstance(Vs30_in_meter_per_sec, (int, float, np.number)):
-            msg = (
-                '`Vs30_in_meter_per_sec` must be int, float, or numpy.number.'
-            )
+            msg = "`Vs30_in_meter_per_sec` must be int, float, or numpy.number."
             raise TypeError(msg)
 
         if not isinstance(z1_in_m, (int, float, np.number, type(None))):
-            msg = '`z1_in_m` must be int, float, numpy.number, or None.'
+            msg = "`z1_in_m` must be int, float, numpy.number, or None."
             raise TypeError(msg)
 
-        if ampl_method not in {'nl_hh', 'eq_hh'}:
+        if ampl_method not in {"nl_hh", "eq_hh"}:
             raise ValueError("Currently, only 'nl_hh' and 'eq_hh' are valid.")
 
         if z1_in_m is None:
@@ -108,10 +106,10 @@ class Site_Effect_Adjustment:
         self._ampl_method = ampl_method
 
     def run(
-            self,
-            show_fig: bool = False,
-            return_fig_obj: bool = False,
-            **kwargs_to_plot: dict[Any, Any],
+        self,
+        show_fig: bool = False,
+        return_fig_obj: bool = False,
+        **kwargs_to_plot: dict[Any, Any],
     ) -> tuple[Ground_Motion, Figure | None, Axes | None]:
         """
         Run the site effect adjustment by querying the SAG19 site factors.
@@ -140,28 +138,28 @@ class Site_Effect_Adjustment:
 
         sf = self.site_factor
         af = sf.get_amplification(method=self._ampl_method, Fourier=True)
-        phf = sf.get_phase_shift(method='eq_hh')  # only `eq_hh` is valid
+        phf = sf.get_phase_shift(method="eq_hh")  # only `eq_hh` is valid
 
         if not np.allclose(af.freq, phf.freq):
             print(
-                'Warning in Site_Effect_Adjustment.run(): the frequency '
-                'arrays of the amplification factor '
-                'and the phase factor are not identical---something may '
-                'be wrong in class_site_factors.py.',
+                "Warning in Site_Effect_Adjustment.run(): the frequency "
+                "arrays of the amplification factor "
+                "and the phase factor are not identical---something may "
+                "be wrong in class_site_factors.py.",
             )
 
         if af.iscomplex:
             print(
-                'Warning in Site_Effect_Adjustment.run(): the '
-                'amplification factor is complex, rather than '
-                'real---something may be wrong in class_site_factors.py',
+                "Warning in Site_Effect_Adjustment.run(): the "
+                "amplification factor is complex, rather than "
+                "real---something may be wrong in class_site_factors.py",
             )
 
         if phf.iscomplex:
             print(
-                'Warning in Site_Effect_Adjustment.run(): the phase '
-                'factor is complex, rather than '
-                'real---something may be wrong in class_site_factors.py',
+                "Warning in Site_Effect_Adjustment.run(): the phase "
+                "factor is complex, rather than "
+                "real---something may be wrong in class_site_factors.py",
             )
 
         freq = af.freq
@@ -179,18 +177,18 @@ class Site_Effect_Adjustment:
         )
         if show_fig:
             accel_out, fig, ax = result
-            ax[0].set_ylabel('Accel. [m/s/s]')
+            ax[0].set_ylabel("Accel. [m/s/s]")
             ax[0].set_title(
-                '$V_{S30}$=%.1fm/s, $z_1$=%.1fm, '
-                r'$\mathrm{PGA}_{\mathrm{input}}$=%.3g$g$'
+                "$V_{S30}$=%.1fm/s, $z_1$=%.1fm, "
+                r"$\mathrm{PGA}_{\mathrm{input}}$=%.3g$g$"
                 % (self.Vs30, self.z1, self.PGA_in_g),
             )
-            ax[1].set_ylabel('Amplif. factor')
-            ax[2].set_ylabel('Phase factor [rad]')
+            ax[1].set_ylabel("Amplif. factor")
+            ax[2].set_ylabel("Phase factor [rad]")
         else:
             accel_out = result[0]
 
-        output_motion = Ground_Motion(accel_out, unit='m')
+        output_motion = Ground_Motion(accel_out, unit="m")
         if return_fig_obj:
             if not show_fig:
                 fig, ax = None, None

@@ -17,12 +17,13 @@ from libs.config.config_logger import get_logger
 
 logger = get_logger()
 
+
 def check_layer_count(
-        vs_profile: Vs_Profile,
-        *,
-        GGmax_and_damping_curves: Multiple_GGmax_Damping_Curves = None,
-        G_param: HH_Param_Multi_Layer | MKZ_Param_Multi_Layer = None,
-        xi_param: HH_Param_Multi_Layer | MKZ_Param_Multi_Layer = None,
+    vs_profile: Vs_Profile,
+    *,
+    GGmax_and_damping_curves: Multiple_GGmax_Damping_Curves = None,
+    G_param: HH_Param_Multi_Layer | MKZ_Param_Multi_Layer = None,
+    xi_param: HH_Param_Multi_Layer | MKZ_Param_Multi_Layer = None,
 ) -> None:
     """
     Check that ``G_param`` and ``xi_param`` have enough sets of parameters for
@@ -47,13 +48,11 @@ def check_layer_count(
     """
     max_mat_num = np.max(vs_profile._material_number)
     if G_param is not None and G_param.n_layer < max_mat_num:
-        raise ValueError(
-            'Not enough sets of parameters in `G_param` for `vs_profile`.'
-        )
+        raise ValueError("Not enough sets of parameters in `G_param` for `vs_profile`.")
 
     if xi_param is not None and xi_param.n_layer < max_mat_num:
         raise ValueError(
-            'Not enough sets of parameters in `xi_param` for `vs_profile`.',
+            "Not enough sets of parameters in `xi_param` for `vs_profile`.",
         )
 
     if (
@@ -61,14 +60,14 @@ def check_layer_count(
         and GGmax_and_damping_curves.n_layer < max_mat_num  # noqa: W503
     ):
         raise ValueError(
-            'Not enough sets of curves in `GGmax_and_damping_curves` for `vs_profile`.',
+            "Not enough sets of curves in `GGmax_and_damping_curves` for `vs_profile`.",
         )
 
 
 def linear(
-        vs_profile: np.ndarray,
-        input_motion: np.ndarray,
-        boundary: Literal['elastic', 'rigid'] = 'elastic',
+    vs_profile: np.ndarray,
+    input_motion: np.ndarray,
+    boundary: Literal["elastic", "rigid"] = "elastic",
 ) -> tuple[np.ndarray, ...]:
     """
     Linear site response simulation.
@@ -142,7 +141,7 @@ def linear(
                 process, of each layer. Shape: ``(n_layer - 1, )``.
     """
     hlp.check_Vs_profile_format(vs_profile)
-    hlp.assert_2D_numpy_array(input_motion, name='`input_motion`')
+    hlp.assert_2D_numpy_array(input_motion, name="`input_motion`")
 
     # -------- Part 1: Data preparation -- soil profile and input motion -----
     (
@@ -178,9 +177,7 @@ def linear(
     )
 
     # --------- Part 3: Calculate stress from strain -------------------------
-    stress, half_N = _calc_stress(
-        G=G, D=D, strain=strain, N=N, n_layer=n_layer
-    )
+    stress, half_N = _calc_stress(G=G, D=D, strain=strain, N=N, n_layer=n_layer)
 
     # --------- Part 4: Post-processing ---------------------------------------
     (
@@ -224,14 +221,14 @@ def linear(
 
 
 def equiv_linear(
-        vs_profile: np.ndarray,
-        input_motion: np.ndarray,
-        curve_matrix: np.ndarray,
-        boundary: Literal['elastic', 'rigid'] = 'elastic',
-        tol: float = 0.075,
-        R_gamma: float = 0.65,
-        max_iter: int = 10,
-        verbose: bool = True,
+    vs_profile: np.ndarray,
+    input_motion: np.ndarray,
+    curve_matrix: np.ndarray,
+    boundary: Literal["elastic", "rigid"] = "elastic",
+    tol: float = 0.075,
+    R_gamma: float = 0.65,
+    max_iter: int = 10,
+    verbose: bool = True,
 ) -> tuple[np.ndarray, ...]:
     """
     Equivalent linear site response simulation.
@@ -319,8 +316,8 @@ def equiv_linear(
     Based on the MATLAB function written by Wei Li and Jian Shi.
     """
     hlp.check_Vs_profile_format(vs_profile)
-    hlp.assert_2D_numpy_array(input_motion, name='`input_motion`')
-    hlp.assert_2D_numpy_array(curve_matrix, name='`curve_matrix`')
+    hlp.assert_2D_numpy_array(input_motion, name="`input_motion`")
+    hlp.assert_2D_numpy_array(curve_matrix, name="`curve_matrix`")
 
     # -------- Part 1.1: Data preparation -- soil profile and input motion -----
     (
@@ -418,20 +415,14 @@ def equiv_linear(
         #     )
 
         # --------- Check convergence ------------------------------------------
-        if (
-            np.max(G_relative_diff) < tol
-            and np.max(D_relative_diff) < tol
-            and verbose
-        ):
-            logger.info('---------- Convergencia alcanzada ---------------')
+        if np.max(G_relative_diff) < tol and np.max(D_relative_diff) < tol and verbose:
+            logger.info("---------- Convergencia alcanzada ---------------")
             break
         # END IF
     # END FOR
 
     # --------- Part 3: Calculate stress from strain ---------------------------
-    stress, half_N = _calc_stress(
-        G=G, D=D, strain=strain, N=N, n_layer=n_layer
-    )
+    stress, half_N = _calc_stress(G=G, D=D, strain=strain, N=N, n_layer=n_layer)
 
     # --------- Part 4: Post-processing ----------------------------------------
     (
@@ -475,7 +466,7 @@ def equiv_linear(
 
 
 def _prepare_inputs(
-        *, vs_profile: np.ndarray, input_motion: np.ndarray
+    *, vs_profile: np.ndarray, input_motion: np.ndarray
 ) -> tuple[Any, ...]:
     """
     Prepare input variables from ``vs_profile`` and ``input_motion``.
@@ -584,21 +575,19 @@ def _prepare_inputs(
 
 
 def _lin_resp_every_layer(
-        *,
-        dt: float,
-        freq: np.ndarray,
-        N: int,
-        n_layer: int,
-        h: np.ndarray,
-        G: np.ndarray,
-        D: np.ndarray,
-        rho: np.ndarray,
-        boundary: Literal['elastic', 'rigid'],
-        ACCEL_IN: np.ndarray,
-        R_gamma: float = 0.65,
-) -> tuple[
-    np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray
-]:
+    *,
+    dt: float,
+    freq: np.ndarray,
+    N: int,
+    n_layer: int,
+    h: np.ndarray,
+    G: np.ndarray,
+    D: np.ndarray,
+    rho: np.ndarray,
+    boundary: Literal["elastic", "rigid"],
+    ACCEL_IN: np.ndarray,
+    R_gamma: float = 0.65,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """
     Propagate input motion to get the linear site response of every layer.
 
@@ -666,11 +655,10 @@ def _lin_resp_every_layer(
     alpha = np.zeros(n_layer - 1, dtype=np.complex128)
     for j in range(n_layer - 1):  # layer by layer
         alpha[j] = (rho[j] * np.sqrt(G[j] * (1 + 2 * 1j * D[j]) / rho[j])) / (
-            rho[j + 1]
-            * np.sqrt(G[j + 1] * (1 + 2 * 1j * D[j + 1]) / rho[j + 1])
+            rho[j + 1] * np.sqrt(G[j + 1] * (1 + 2 * 1j * D[j + 1]) / rho[j + 1])
         )
 
-    if boundary == 'rigid':
+    if boundary == "rigid":
         alpha[-1] = 0  # disallow energy transmission past the boundary
 
     # (3) Complex shear-wave velocities of each layer (Kramer's book, page 260)
@@ -700,7 +688,9 @@ def _lin_resp_every_layer(
         )  # left half
 
     # (6) Compute linear transfer function
-    H_ss = np.zeros((half_N, n_layer), dtype=np.complex128)  # single-sided transfer function
+    H_ss = np.zeros(
+        (half_N, n_layer), dtype=np.complex128
+    )  # single-sided transfer function
     H_append = np.zeros((half_N - 1, n_layer), dtype=np.complex128)  # the other half
     for k in range(n_layer):
         H_ss[:, k] = (A[:, k] + B[:, k]) / A[:, -1]
@@ -764,12 +754,12 @@ def _lin_resp_every_layer(
 
 
 def _calc_stress(
-        *,
-        G: np.ndarray,
-        D: np.ndarray,
-        N: int,
-        n_layer: int,
-        strain: np.ndarray,
+    *,
+    G: np.ndarray,
+    D: np.ndarray,
+    N: int,
+    n_layer: int,
+    strain: np.ndarray,
 ) -> tuple[np.ndarray, int]:
     """
     Calculate stress time history from strain time history.
@@ -810,18 +800,18 @@ def _calc_stress(
 
 
 def _post_processing(
-        *,
-        flag: Literal[0, 1],
-        freq: np.ndarray,
-        half_N: int,
-        H: np.ndarray,
-        t: np.ndarray,
-        accel_out: np.ndarray,
-        veloc: np.ndarray,
-        displ: np.ndarray,
-        strain: np.ndarray,
-        stress: np.ndarray,
-        h: np.ndarray,
+    *,
+    flag: Literal[0, 1],
+    freq: np.ndarray,
+    half_N: int,
+    H: np.ndarray,
+    t: np.ndarray,
+    accel_out: np.ndarray,
+    veloc: np.ndarray,
+    displ: np.ndarray,
+    strain: np.ndarray,
+    stress: np.ndarray,
+    h: np.ndarray,
 ) -> tuple[np.ndarray, ...]:
     """
     Post-process simulation results.

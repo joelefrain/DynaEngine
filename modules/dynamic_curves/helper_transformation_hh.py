@@ -1,14 +1,11 @@
 import numpy as np
 from numpy.typing import NDArray
-from libs.config.config_variables import (
-    STRAIN_RANGE, 
-    MIN_FLOAT, 
-    MAX_FLOAT, 
-    EXP_LIMIT)
+from libs.config.config_variables import STRAIN_RANGE, MIN_FLOAT, MAX_FLOAT, EXP_LIMIT
 
 MIN_A = 1e-6
 
 Array1D = NDArray[np.float64]
+
 
 def GGmax_HH_model(
     gg_ref: float,
@@ -18,7 +15,7 @@ def GGmax_HH_model(
     a: float,
     G_max: float,
     gamma_ref: float,
-    gamma_t: float, # Agregado
+    gamma_t: float,  # Agregado
     tau_max: float,
     model: object,
 ) -> Array1D:
@@ -61,7 +58,9 @@ def GGmax_HH_model(
     """
     a = np.clip(a, MIN_A, None)
 
-    beta = model._calcular_beta_ref(gg_ref, d, a, mu, gamma_ref, gamma_t, tau_max, G_max)
+    beta = model._calcular_beta_ref(
+        gg_ref, d, a, mu, gamma_ref, gamma_t, tau_max, G_max
+    )
 
     tau_mkz = _calcular_tau_mkz(gamma_ref, beta, s, G_max)
     tau_fkz = _calcular_tau_fkz(mu, d, tau_max, G_max)

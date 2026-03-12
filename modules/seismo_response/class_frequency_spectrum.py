@@ -99,16 +99,16 @@ class Frequency_Spectrum:
     iscomplex: bool
 
     def __init__(
-            self,
-            data: str | np.ndarray,
-            *,
-            df: float = None,
-            interpolate: bool = False,
-            fmin: float = 0.1,
-            fmax: float = 30,
-            n_pts: int = 1000,
-            log_scale: bool = True,
-            sep: str = '\t',
+        self,
+        data: str | np.ndarray,
+        *,
+        df: float = None,
+        interpolate: bool = False,
+        fmin: float = 0.1,
+        fmax: float = 30,
+        n_pts: int = 1000,
+        log_scale: bool = True,
+        sep: str = "\t",
     ) -> None:
         data_, df = hlp.read_two_column_stuff(data, df, sep)
         if isinstance(data, str):  # is a file name
@@ -148,7 +148,7 @@ class Frequency_Spectrum:
         self.iscomplex = np.iscomplex(self.spectrum).any()
 
     def __repr__(self) -> str:
-        text = 'df = %.2f Hz, n_pts = %d, f_min = %.2f Hz, f_max = %.2f Hz' % (
+        text = "df = %.2f Hz, n_pts = %d, f_min = %.2f Hz, f_max = %.2f Hz" % (
             self.raw_df,
             self.n_pts,
             self.fmin,
@@ -157,15 +157,15 @@ class Frequency_Spectrum:
         return text
 
     def plot(
-            self,
-            fig: Figure | None = None,
-            ax: Axes | None = None,
-            figsize: tuple[float, float] = None,
-            dpi: float = 100,
-            logx: bool = True,
-            logy: bool = False,
-            plot_abs: bool = False,
-            **kwargs_plot: dict[Any, Any],
+        self,
+        fig: Figure | None = None,
+        ax: Axes | None = None,
+        figsize: tuple[float, float] = None,
+        dpi: float = 100,
+        logx: bool = True,
+        logy: bool = False,
+        plot_abs: bool = False,
+        **kwargs_plot: dict[Any, Any],
     ) -> tuple[Figure, Axes]:
         """
         Plot the shape of the interpolated spectrum.
@@ -198,23 +198,21 @@ class Frequency_Spectrum:
         ax : Axes
             The axes object being created or being passed into this function.
         """
-        fig, ax = hlp._process_fig_ax_objects(
-            fig, ax, figsize=figsize, dpi=dpi
-        )
+        fig, ax = hlp._process_fig_ax_objects(fig, ax, figsize=figsize, dpi=dpi)
 
         if plot_abs:
             ax.plot(self.freq, self.amplitude, **kwargs_plot)
         else:
             ax.plot(self.freq, self.spectrum, **kwargs_plot)
 
-        ax.set_xlabel('Frequency [Hz]')
-        ax.set_ylabel('Amplitude or phase')
-        ax.grid(ls=':')
+        ax.set_xlabel("Frequency [Hz]")
+        ax.set_ylabel("Amplitude or phase")
+        ax.grid(ls=":")
         if logx:
-            ax.set_xscale('log')
+            ax.set_xscale("log")
 
         if logy:
-            ax.set_yscale('log')
+            ax.set_yscale("log")
 
         if self._file_name:
             ax.set_title(self._file_name)
@@ -222,12 +220,12 @@ class Frequency_Spectrum:
         return fig, ax
 
     def get_smoothed(
-            self,
-            win_len: int = 15,
-            show_fig: bool = False,
-            *,
-            log_scale: bool,
-            **kwargs: dict[Any, Any],
+        self,
+        win_len: int = 15,
+        show_fig: bool = False,
+        *,
+        log_scale: bool,
+        **kwargs: dict[Any, Any],
     ) -> tuple[np.ndarray | None, Figure, Axes]:
         """
         Smooth the spectrum by calculating the convolution of the raw
@@ -267,14 +265,12 @@ class Frequency_Spectrum:
         if show_fig:
             fig = plt.figure()
             ax = plt.axes()
-            ax.semilogx(
-                self.freq, self.spectrum, color='gray', label='original'
-            )
-            ax.semilogx(self.freq, sm, color='m', label='smoothed')
-            ax.grid(ls=':')
-            ax.set_xlabel('Frequency [Hz]')
-            ax.set_ylabel('Spectrum')
-            ax.legend(loc='best')
+            ax.semilogx(self.freq, self.spectrum, color="gray", label="original")
+            ax.semilogx(self.freq, sm, color="m", label="smoothed")
+            ax.grid(ls=":")
+            ax.set_xlabel("Frequency [Hz]")
+            ax.set_ylabel("Spectrum")
+            ax.legend(loc="best")
 
         return sm, fig, ax
 
@@ -312,7 +308,5 @@ class Frequency_Spectrum:
             unwrapped_phase = np.unwrap(self.phase)
 
         data_1col = self.amplitude * np.exp(1j * unwrapped_phase)
-        unwrapped = Frequency_Spectrum(
-            data_1col, df=self.raw_df, interpolate=False
-        )
+        unwrapped = Frequency_Spectrum(data_1col, df=self.raw_df, interpolate=False)
         return unwrapped
