@@ -1,6 +1,5 @@
 import numpy as np
 from numpy.typing import NDArray
-from libs.config.config_variables import STRAIN_RANGE
 
 Array1D = NDArray[np.float64]
 
@@ -46,35 +45,29 @@ class GQHModelFormulation:
         self.theta_5 = parametros_gqh["theta_5"]
         self.model_type = 0
 
-    def GGmax_model(self, gamma_ref: float) -> Array1D:
-        """
-        Calcula la curva de reducción del módulo cortante normalizado (G/Gmax)
-        para un valor dado de deformación de referencia.
+    def compute_theta_tau(self, strain: Array1D, x: float):
 
-        Parámetros
-        ----------
-        gamma_ref : float
-            Deformación cortante de referencia.
+        strain = np.asarray(strain, dtype=float)
 
-        Retorna
-        -------
-        np.ndarray
-            Valores de G/Gmax evaluados sobre STRAIN_RANGE.
-        """
-        x = STRAIN_RANGE / gamma_ref
+        rad = self.theta_4 * x**self.theta_5
 
-        theta_r = self.theta_1 + self.theta_2 * (self.theta_4 * x**self.theta_5) / (
-            self.theta_3**self.theta_5 + self.theta_4 * x**self.theta_5
-        )
+        theta_r = self.theta_1 + self.theta_2 * rad / (self.theta_3**self.theta_5 + rad)
+        return np.minimum(theta_r, 1.0)
 
-        theta_r = np.minimum(theta_r, 1.0)
+    def GGmax_model(self, strain: Array1D, gamma_ref: float) -> Array1D:
+
+        x = strain / gamma_ref
+
+        theta_r = self.compute_theta_tau(strain, x)
 
         inside = (1 + x) ** 2 - 4 * theta_r * x
-        if inside.any() < 0:
-            raise ("Se estan generando problemas de cálculo. Raiz compleja")
+
+        if np.any(inside < 0):
+            raise ValueError("Raíz negativa en GQH")
+
         GG = 2 / (1 + x + np.sqrt(inside))
 
-        return GG
+        return np.minimum(GG, 1.0)
 
     def calculate_gg_ref(self) -> float:
         """
@@ -139,3 +132,17 @@ class GQHModelFormulation:
         ref = np.clip(ref, 1e-12, None)
 
         return -1 + omega / ref
+
+
+class BackboneWrapper:
+    def __init__(self, gqh_model, gmax, tau_max):
+        self.model = gqh_model
+        self.gmax = gmax
+        self.tau_max = tau_max
+        self.gamma_ref = tau_max / gmax
+
+    def GGmax_model(self, strain, gamma_ref):
+        return self.model.GGmax_model(strain, gamma_ref)
+
+    def compute_theta_tau(self, gamma, gamma_norm):
+        return self.model.compute_theta_tau(gamma, gamma_norm)

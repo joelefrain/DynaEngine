@@ -40,7 +40,7 @@ def calculate_calibration(
         if np.any(np.isnan(GG_model)) or np.any(GG_model <= 0):
             return -1e10
 
-        error = error_rule.compute(GGmax_GQH, GG_model)
+        error = error_rule.compute(GGmax_GQH, GG_model, gamma_ref)
 
         return -error
 
@@ -49,7 +49,7 @@ def calculate_calibration(
     optimizer = BayesianOptimization(
         f=objective, pbounds=pbounds, random_state=42, verbose=0
     )
-    optimizer.maximize(init_points=8, n_iter=100)
+    optimizer.maximize(init_points=20, n_iter=100)
 
     best_params = optimizer.max["params"]
     beta = model._calcular_beta_ref(

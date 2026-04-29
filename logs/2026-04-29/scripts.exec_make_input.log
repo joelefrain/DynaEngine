@@ -1,0 +1,24 @@
+2026-04-29 07:47:16,390 [INFO] scripts.exec_make_input: Carpeta sesión: C:\Prismo\make_calibration\sesion_20260429_074707
+2026-04-29 08:39:29,687 [INFO] scripts.exec_make_input: x_position[section_01.dxf]: {'failure_1': [294.6126], 'failure_2': [], 'failure_3': [], 'failure_4': [284.5602], 'failure_5': [], 'failure_6': [426.803], 'failure_7': []}
+2026-04-29 08:39:29,689 [INFO] scripts.exec_make_input: 
+[EXPORTACIÓN] Generando columnas para: C:\Users\joel.alarcon\Downloads\section_01\section_01.dxf
+2026-04-29 08:39:29,750 [INFO] scripts.exec_make_input: x_position[section_01.dxf]: {'failure_1': [294.6126], 'failure_2': [], 'failure_3': [], 'failure_4': [284.5602], 'failure_5': [], 'failure_6': [426.803], 'failure_7': []}
+2026-04-29 08:39:29,752 [INFO] scripts.exec_make_input: 
+[EXPORTACIÓN] Generando columnas para: C:\Users\joel.alarcon\Downloads\section_01\section_01.dxf
+2026-04-29 08:39:29,801 [INFO] scripts.exec_make_input: x_position[section_01.dxf]: {'failure_1': [294.6126], 'failure_2': [], 'failure_3': [], 'failure_4': [284.5602], 'failure_5': [], 'failure_6': [426.803], 'failure_7': []}
+2026-04-29 08:39:29,801 [INFO] scripts.exec_make_input: 
+[EXPORTACIÓN] Generando columnas para: C:\Users\joel.alarcon\Downloads\section_01\section_01.dxf
+2026-04-29 08:39:29,923 [INFO] scripts.exec_make_input: Carpeta sesión: C:\Users\joel.alarcon\Desktop\_code\sinergia_process\prismo\_outputs\make_calibration\sesion_20260429_074707
+2026-04-29 08:39:29,924 [INFO] scripts.exec_make_input: Inputs desde: C:\Users\joel.alarcon\Downloads\section_01
+2026-04-29 08:39:29,924 [INFO] scripts.exec_make_input: Archivos encontrados: ['section_01.dxf', 'section_02.dxf']
+
+2026-04-29 08:39:29,925 [INFO] scripts.exec_make_input: 
+========================================
+2026-04-29 08:39:29,926 [INFO] scripts.exec_make_input: Procesando: section_01.dxf
+2026-04-29 08:39:29,926 [INFO] scripts.exec_make_input: Ruta: C:\Users\joel.alarcon\Downloads\section_01\section_01.dxf
+2026-04-29 08:39:29,930 [INFO] scripts.exec_make_input: Section: section_01
+2026-04-29 08:39:29,931 [INFO] scripts.exec_make_input: 
+========================================
+2026-04-29 08:39:29,933 [INFO] scripts.exec_make_input: x_position[section_01.dxf]: {'failure_1': [294.6126], 'failure_2': [], 'failure_3': [], 'failure_4': [284.5602], 'failure_5': [], 'failure_6': [426.803], 'failure_7': []}
+2026-04-29 08:39:29,934 [INFO] scripts.exec_make_input: 
+[EXPORTACIÓN] Generando columnas para: C:\Users\joel.alarcon\Downloads\section_01\section_01.dxf

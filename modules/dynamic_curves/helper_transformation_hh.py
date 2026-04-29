@@ -100,9 +100,9 @@ def _calcular_tau_fkz(mu: float, d: float, tau_max: float, G_max: float) -> Arra
     return tau_fkz
 
 
-def _calcular_omega_hh(gamma_ref: float, a: float) -> Array1D:
+def _calcular_omega_hh(gamma_t: float, a: float) -> Array1D:
 
-    ratio = np.clip(STRAIN_RANGE / gamma_ref, MIN_FLOAT, MAX_FLOAT)
+    ratio = np.clip(STRAIN_RANGE / gamma_t, MIN_FLOAT, MAX_FLOAT)
     log_ratio = np.log10(ratio)
 
     shift = 4.039 * np.power(a, -1.036)
