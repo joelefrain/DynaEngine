@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "dynaengine"
+version = "0.1.0"
+description = "Core calculations for DynaEngine desktop workflows"
+requires-python = ">=3.10"
+dependencies = [
+    "numpy",
+    "pandas",
+    "scipy",
+    "matplotlib",
+    "bayesian-optimization",
+    "ezdxf",
+    "shapely",
+    "openpyxl",
+]
+
+[tool.setuptools.packages.find]
+include = ["dynaengine*"]
+
+[tool.setuptools.package-data]
+dynaengine = ["data/*.json"]
