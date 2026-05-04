@@ -114,6 +114,8 @@ def evaluate_dynamic_curve(
 
     if model_type == "darendeli_2001":
         strain, ggmax, damping = _darendeli_2001(p, sigma)
+    elif model_type == "calibrated_darendeli":
+        strain, ggmax, damping = _calibrated_darendeli(p, sigma)
     elif model_type == "menq_2003":
         strain, ggmax, damping = _menq_2003(p, sigma)
     elif model_type == "rollins_2020":
@@ -213,6 +215,30 @@ def _darendeli_2001(
 
     ggmax = np.minimum(1 / (1 + (strain / gamma_ref) ** a), 1)
     damping = b * (ggmax**0.1) * _damping_masing(strain, gamma_ref, a) + d_min
+    return strain, ggmax, damping
+
+
+def _calibrated_darendeli(
+    p: dict[str, Any], sigma_vertical_kpa: float
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Parameterized Darendeli-style curve preserved from old_calibration."""
+
+    strain = DEFAULT_SHEAR_STRAIN
+    confinement = sigma_vertical_kpa * (1 + float(p["k0"])) / 2
+    a = float(p["a1"]) + float(p["a2"]) * confinement
+    gamma_ref = float(p["y1"]) + float(p["y2"]) * confinement
+    if a <= 0:
+        raise ValueError("calibrated_darendeli requiere a1 + a2 * confinamiento > 0")
+    if gamma_ref <= 0:
+        raise ValueError("calibrated_darendeli requiere y1 + y2 * confinamiento > 0")
+
+    ggmax = np.minimum(1 / (1 + (strain / gamma_ref) ** a), 1)
+    damping = (
+        float(p["D1"]) * ggmax**2
+        + float(p["D2"]) * ggmax
+        + float(p["D3"])
+        + float(p["Dmin"])
+    )
     return strain, ggmax, damping
 
 
@@ -382,7 +408,9 @@ def _rojas_2019(
     sigma_m_kpa = (
         _mean_effective_stress_atm(p["k0"], sigma_vertical_kpa) * ATM_PRESSURE_KPA
     )
-    available = np.array(list(_discrete_curves()["rojas"]["G_Gmax"].keys()), dtype=float)
+    available = np.array(
+        list(_discrete_curves()["rojas"]["G_Gmax"].keys()), dtype=float
+    )
     if sigma_m_kpa < available.min():
         raise ValueError("Confinamiento fuera del rango disponible para Rojas (2019)")
     sigma_ref = max(available[available <= sigma_m_kpa])
@@ -400,7 +428,9 @@ def _seed_idriss_1970(p: dict[str, Any]) -> tuple[np.ndarray, np.ndarray, np.nda
     strain = SEED_IDRISS_SHEAR_STRAIN
     source_strain = _discrete_curves()["gamma"]
     band = p["band"]
-    ggmax = _interp_log(source_strain, strain, _discrete_curves()["seed"]["G_Gmax"][band])
+    ggmax = _interp_log(
+        source_strain, strain, _discrete_curves()["seed"]["G_Gmax"][band]
+    )
     damping = _interp_log(source_strain, strain, _discrete_curves()["seed"]["D"][band])
     return strain, ggmax, damping
 

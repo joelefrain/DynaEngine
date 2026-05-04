@@ -36,7 +36,13 @@ export_dataframe(frame, "salidas/columna.csv")
 
 ## Materiales
 
-No hay valores geotecnicos predefinidos. Cada material debe traer nombre, peso unitario, perfil Vs, resistencia al corte y modelo dinamico completo. Si el DXF genera un `Estrato no identificado`, el frontend puede asociarlo a un material existente o crear un material nuevo antes de discretizar/calibrar.
+No hay valores geotecnicos predefinidos. Cada material debe traer nombre, peso unitario, perfil Vs, resistencia al corte y modelo dinamico completo. Si el DXF genera un `Estrato no identificado`, el frontend puede asociarlo a un material existente o crear un material nuevo antes de discretizar/calibrar. Si un estrato no identificado queda sin resolver, deben omitirse las columnas que lo cruzan; `filter_columns_with_unresolved_materials` devuelve la lista de columnas omitidas para notificar al usuario.
+
+El ejemplo `section_01.dxf` lee sus materiales desde:
+
+```python
+examples/data/section_01_materials.json
+```
 
 ## Fallas en DXF
 
@@ -45,9 +51,18 @@ No hay valores geotecnicos predefinidos. Cada material debe traer nombre, peso u
 ```python
 extraction = extract_columns_from_dxf(
     "examples/data/section_01.dxf",
-    x_positions=[190, 225, 250],
+    x_positions={
+        "failure_1": [190, 225],
+        "failure_2": [250],
+    },
     failure_types={"failure_1": "rotacional", "failure_2": "planar"},
 )
 ```
 
 Los campos `failure_surface`, `failure_type`, `failure_height` y `depth_failure_surface` viajan en cada columna extraida y se conservan en las tablas procesadas.
+
+`polygon_area_summary` y `area_notifications` reportan `polygon_id`, `area_ratio_to_total`, `bounds`, `representative_point` y `geometry_wkt`. Las areas pequenas se marcan como `small_area_omitted`; se omiten al cortar la columna y las capas superior e inferior se extienden hasta el centro del intervalo pequeno.
+
+## Calibracion
+
+La calibracion GQ/H + MRDF se ejecuta por estrato discretizado. Depende de la curva dinamica del material evaluada con el esfuerzo efectivo vertical del segmento, de `Gmax` calculado con peso unitario y Vs, y de `tau_max` calculado con resistencia al corte, `k0` y esfuerzo efectivo. `CalibrationSettings` usa por defecto `optimizer="scipy"` para una calibracion local multistart mas rapida, manteniendo las mismas funciones de costo de `old_dynaengine`; `optimizer="bayesian"` sigue disponible.

@@ -77,6 +77,62 @@
             }
         }
     },
+    "calibrated_darendeli": {
+        "model_name": "Darendeli calibrado",
+        "model_type": "simple",
+        "model_parameters": {
+            "k0": {
+                "screen_name": "k0",
+                "large_name": "Coeficiente lateral en reposo",
+                "type": "float",
+                "min_value": 0,
+                "max_value": 5
+            },
+            "a1": {
+                "screen_name": "a1",
+                "large_name": "Intercepto del exponente a",
+                "type": "float"
+            },
+            "a2": {
+                "screen_name": "a2",
+                "large_name": "Pendiente del exponente a con confinamiento",
+                "type": "float"
+            },
+            "y1": {
+                "screen_name": "y1",
+                "large_name": "Intercepto de gamma_ref",
+                "type": "float",
+                "min_value": 0
+            },
+            "y2": {
+                "screen_name": "y2",
+                "large_name": "Pendiente de gamma_ref con confinamiento",
+                "type": "float"
+            },
+            "D1": {
+                "screen_name": "D1",
+                "large_name": "Coeficiente cuadratico de amortiguamiento",
+                "type": "float"
+            },
+            "D2": {
+                "screen_name": "D2",
+                "large_name": "Coeficiente lineal de amortiguamiento",
+                "type": "float"
+            },
+            "D3": {
+                "screen_name": "D3",
+                "large_name": "Coeficiente constante de amortiguamiento",
+                "type": "float"
+            },
+            "Dmin": {
+                "screen_name": "Dmin",
+                "large_name": "Amortiguamiento minimo",
+                "type": "float",
+                "unit": "%",
+                "min_value": 0
+            }
+        }
+    },
     "rollins_2020": {
         "model_name": "Rollins (2020)",
         "model_type": "simple",

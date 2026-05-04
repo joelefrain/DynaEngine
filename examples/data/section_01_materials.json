@@ -1,0 +1,191 @@
+[
+  {
+    "material_name": "Material de poza",
+    "unit_weight_kn_m3": 19,
+    "shear_velocity": {
+      "depth": [
+        0,
+        5,
+        10,
+        15
+      ],
+      "vs": [
+        300,
+        350,
+        440,
+        550
+      ]
+    },
+    "shear_properties": {
+      "c": 0,
+      "phi": 34
+    },
+    "dynamic_model": {
+      "model_type": "darendeli_2001",
+      "sigma_vertical": 100,
+      "soil_parameters": {
+        "IP": 0.0,
+        "OCR": 1.0,
+        "k0": 0.7,
+        "frequency": 1.0,
+        "N": 10
+      }
+    }
+  },
+  {
+    "material_name": "Material del dique",
+    "unit_weight_kn_m3": 20,
+    "shear_velocity": {
+      "depth": [
+        0,
+        8,
+        15,
+        20
+      ],
+      "vs": [
+        320,
+        380,
+        420,
+        550
+      ]
+    },
+    "shear_properties": {
+      "c": 0,
+      "phi": 34
+    },
+    "dynamic_model": {
+      "model_type": "menq_2003",
+      "sigma_vertical": 100,
+      "soil_parameters": {
+        "Cu": 18.0,
+        "D50": 8.0,
+        "k0": 0.7,
+        "N": 10
+      }
+    }
+  },
+  {
+    "material_name": "Grava arcillosa",
+    "unit_weight_kn_m3": 19,
+    "shear_velocity": {
+      "depth": [
+        0,
+        10,
+        20,
+        25
+      ],
+      "vs": [
+        200,
+        330,
+        540,
+        600
+      ]
+    },
+    "shear_properties": {
+      "c": 0,
+      "phi": 34
+    },
+    "dynamic_model": {
+      "model_type": "wang_2021",
+      "sigma_vertical": 100,
+      "soil_parameters": {
+        "soil_group": "Nonplastic silty sand group",
+        "Cu": 2.0,
+        "CF": 50.0,
+        "e": 0.7,
+        "D50": 1.0,
+        "wc": 1.0,
+        "k0": 0.7
+      }
+    }
+  },
+  {
+    "material_name": "Grava arenosa",
+    "unit_weight_kn_m3": 19,
+    "shear_velocity": {
+      "depth": [
+        0,
+        24,
+        30,
+        40
+      ],
+      "vs": [
+        230,
+        300,
+        440,
+        700
+      ]
+    },
+    "shear_properties": {
+      "c": 0,
+      "phi": 34
+    },
+    "dynamic_model": {
+      "model_type": "rollins_2020",
+      "sigma_vertical": 100,
+      "soil_parameters": {
+        "Cu": 1.0,
+        "k0": 1.0
+      }
+    }
+  },
+  {
+    "material_name": "Grava pobremente gradada",
+    "unit_weight_kn_m3": 19.0,
+    "shear_velocity": {
+      "depth": [
+        0,
+        24,
+        30,
+        35
+      ],
+      "vs": [
+        230,
+        300,
+        440,
+        500
+      ]
+    },
+    "shear_properties": {
+      "c": 0,
+      "phi": 34
+    },
+    "dynamic_model": {
+      "model_type": "ishibashi_1993",
+      "sigma_vertical": 100,
+      "soil_parameters": {
+        "IP": 50.0,
+        "k0": 0.5
+      }
+    }
+  },
+  {
+    "material_name": "Estrato no identificado 1",
+    "unit_weight_kn_m3": 19.0,
+    "shear_velocity": {
+      "depth": [
+        0,
+        24,
+        30,
+        35
+      ],
+      "vs": [
+        230,
+        300,
+        440,
+        550
+      ]
+    },
+    "shear_properties": {
+      "c": 0,
+      "phi": 34
+    },
+    "dynamic_model": {
+      "model_type": "rojas_2019",
+      "sigma_vertical": 100,
+      "soil_parameters": {
+        "k0": 1.0
+      }
+    }
+  }
+]

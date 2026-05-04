@@ -1,15 +1,13 @@
 """
-Public functions in this package are pure Python entry points for the future
-desktop frontend. They do not write files unless an explicit output path is
-provided by the caller.
+DynaEngine is a Python package designed for processing and analyzing stratigraphic column data.
 """
 
-from dynaengine.calibration import (
+from .calibration import (
     CalibrationResult,
     CalibrationSettings,
     calibrate_dynamic_curve,
 )
-from dynaengine.columns import (
+from .columns import (
     ColumnLayer,
     DiscretizationSettings,
     Material,
@@ -20,27 +18,30 @@ from dynaengine.columns import (
     calibrate_discretized_column,
     discretize_column,
 )
-from dynaengine.dxf import (
+from .dxf import (
     DxfColumnExtraction,
     apply_material_aliases,
     extract_columns_from_dxf,
     summarize_polygon_areas,
 )
-from dynaengine.dynamic_curves import (
+from .dynamic_curves import (
     DynamicCurveResult,
     DynamicModelSpec,
     evaluate_dynamic_curve,
 )
-from dynaengine.pipeline import (
+from .pipeline import (
     ColumnProcessingResult,
+    MaterialResolution,
     export_dataframe,
+    filter_columns_with_unresolved_materials,
     filter_columns,
     prepare_column_configs,
     process_column_config,
     process_dxf_folder,
     resolve_unidentified_materials,
+    resolve_unidentified_materials_detailed,
 )
-from dynaengine.plots import (
+from .plots import (
     plot_column_discretized_detailed,
     plot_dxf_extraction,
     plot_raw_column,
@@ -60,6 +61,7 @@ __all__ = [
     "DynamicModelSpec",
     "Material",
     "MaterialLibrary",
+    "MaterialResolution",
     "ShearVelocityProfile",
     "StratigraphicColumn",
     "build_raw_column_table",
@@ -70,6 +72,7 @@ __all__ = [
     "export_dataframe",
     "extract_columns_from_dxf",
     "apply_material_aliases",
+    "filter_columns_with_unresolved_materials",
     "filter_columns",
     "summarize_polygon_areas",
     "plot_dxf_extraction",
@@ -82,4 +85,5 @@ __all__ = [
     "process_column_config",
     "process_dxf_folder",
     "resolve_unidentified_materials",
+    "resolve_unidentified_materials_detailed",
 ]

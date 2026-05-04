@@ -13,6 +13,10 @@ PACKAGE_DIR = Path(__file__).resolve().parent
 DEFAULT_CATALOG_PATH = PACKAGE_DIR / "data" / "dynamic_curve_models.json"
 
 MODEL_ALIASES = {
+    "cal_darendeli": "calibrated_darendeli",
+    "calibracion_darendeli": "calibrated_darendeli",
+    "darendeli_calibrated": "calibrated_darendeli",
+    "calibrated_darendeli": "calibrated_darendeli",
     "seedidriss_1970": "seed_1970",
     "seed_idriss_1970": "seed_1970",
     "seed_1970": "seed_1970",
@@ -28,7 +32,9 @@ PARAMETER_ALIASES = {
 }
 
 
-def _float_param(min_value: float | None = None, max_value: float | None = None) -> dict[str, Any]:
+def _float_param(
+    min_value: float | None = None, max_value: float | None = None
+) -> dict[str, Any]:
     metadata: dict[str, Any] = {"type": "float"}
     if min_value is not None:
         metadata["min_value"] = min_value
@@ -45,6 +51,19 @@ _FALLBACK_CATALOG: dict[str, Any] = {
             "OCR": _float_param(0),
             "frequency": _float_param(0),
             "N": _float_param(0),
+        }
+    },
+    "calibrated_darendeli": {
+        "model_parameters": {
+            "k0": _float_param(0),
+            "a1": _float_param(),
+            "a2": _float_param(),
+            "y1": _float_param(0),
+            "y2": _float_param(),
+            "D1": _float_param(),
+            "D2": _float_param(),
+            "D3": _float_param(),
+            "Dmin": _float_param(0),
         }
     },
     "menq_2003": {

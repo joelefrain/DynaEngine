@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import warnings
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -40,6 +41,13 @@ class ColumnProcessingResult:
         return self.calibrated if self.calibrated is not None else self.discretized
 
 
+@dataclass(frozen=True)
+class MaterialResolution:
+    materials: list[dict[str, Any]]
+    aliases: dict[str, str]
+    unresolved: list[str]
+
+
 def filter_columns(
     columns: dict[str, dict[str, Any]],
     selected_names: list[str] | None = None,
@@ -72,6 +80,31 @@ def resolve_unidentified_materials(
     Characterization actions may optionally include ``name``/``material_name`` to
     rename the stratum while adding its properties.
     """
+
+    resolution = resolve_unidentified_materials_detailed(
+        materials,
+        unidentified_materials,
+        actions=actions,
+        material_aliases=material_aliases,
+    )
+    if resolution.unresolved:
+        raise ValueError(
+            "Estratos no identificados sin resolver: "
+            + ", ".join(resolution.unresolved)
+            + ". Para cada uno, caracterice sus propiedades como material nuevo "
+            + "(opcionalmente con nombre nuevo) o asignelo a un material ya caracterizado."
+        )
+
+    return resolution.materials, resolution.aliases
+
+
+def resolve_unidentified_materials_detailed(
+    materials: list[dict[str, Any]],
+    unidentified_materials: list[str],
+    actions: UnidentifiedMaterialActions | None = None,
+    material_aliases: dict[str, str] | None = None,
+) -> MaterialResolution:
+    """Resolve unidentified strata without forcing unresolved ones to be used."""
 
     actions = actions or {}
     incoming_aliases = material_aliases or {}
@@ -112,15 +145,46 @@ def resolve_unidentified_materials(
             source, target = alias
             resolved_aliases[source] = target
 
-    if unresolved:
-        raise ValueError(
-            "Estratos no identificados sin resolver: "
-            + ", ".join(unresolved)
-            + ". Para cada uno, caracterice sus propiedades como material nuevo "
-            + "(opcionalmente con nombre nuevo) o asignelo a un material ya caracterizado."
-        )
+    return MaterialResolution(
+        materials=resolved_materials,
+        aliases=resolved_aliases,
+        unresolved=unresolved,
+    )
 
-    return resolved_materials, resolved_aliases
+
+def filter_columns_with_unresolved_materials(
+    columns: dict[str, dict[str, Any]],
+    unresolved_materials: list[str],
+) -> tuple[dict[str, dict[str, Any]], list[dict[str, Any]]]:
+    """Omit columns crossing unresolved unidentified strata."""
+
+    unresolved = set(unresolved_materials)
+    if not unresolved:
+        return columns, []
+
+    filtered: dict[str, dict[str, Any]] = {}
+    omitted: list[dict[str, Any]] = []
+    for column_name, column in columns.items():
+        column_unresolved = sorted(
+            {
+                str(layer["material"])
+                for layer in column.get("layers", [])
+                if str(layer.get("material")) in unresolved
+            }
+        )
+        if column_unresolved:
+            omitted.append(
+                {
+                    "column_name": column_name,
+                    "x_position": column.get("x_position"),
+                    "failure_surface": column.get("failure_surface"),
+                    "unresolved_materials": column_unresolved,
+                }
+            )
+            continue
+        filtered[column_name] = column
+
+    return filtered, omitted
 
 
 def _resolve_unidentified_action(
@@ -142,9 +206,15 @@ def _resolve_unidentified_action(
 
     action_type = str(action.get("action", "assign")).strip().lower()
     if action_type in {"assign", "assign_existing", "asignar", "alias"}:
-        target = action.get("material") or action.get("material_name") or action.get("assign_to")
+        target = (
+            action.get("material")
+            or action.get("material_name")
+            or action.get("assign_to")
+        )
         if target is None:
-            raise ValueError(f"La accion de asignacion para '{unidentified}' requiere material")
+            raise ValueError(
+                f"La accion de asignacion para '{unidentified}' requiere material"
+            )
         target = str(target)
         if target not in material_names:
             raise ValueError(
@@ -171,7 +241,11 @@ def _resolve_unidentified_action(
             or unidentified
         )
         material = {**material_data, "material_name": str(target_name)}
-        alias = None if str(target_name) == unidentified else (unidentified, str(target_name))
+        alias = (
+            None
+            if str(target_name) == unidentified
+            else (unidentified, str(target_name))
+        )
         return alias, material
 
     raise ValueError(
@@ -247,7 +321,9 @@ def process_dxf_folder(
     for dxf_path in sorted(section_folder.glob("*.dxf")):
         positions = _positions_for_file(dxf_path, x_positions_by_file)
         failure_types = _value_for_file(dxf_path, failure_types_by_file)
-        material_aliases = _material_aliases_for_file(dxf_path, material_aliases_by_file)
+        material_aliases = _material_aliases_for_file(
+            dxf_path, material_aliases_by_file
+        )
         unidentified_actions = _unidentified_actions_for_file(
             dxf_path, unidentified_material_actions_by_file
         )
@@ -258,17 +334,28 @@ def process_dxf_folder(
             failure_types=failure_types,
             small_area_scale=small_area_scale,
         )
-        materials_for_file, unidentified_aliases = resolve_unidentified_materials(
+        resolution = resolve_unidentified_materials_detailed(
             materials,
             extraction.unidentified_materials,
             actions=unidentified_actions,
             material_aliases=material_aliases,
         )
-        all_aliases = {**(material_aliases or {}), **unidentified_aliases}
+        all_aliases = {**(material_aliases or {}), **resolution.aliases}
         columns = apply_material_aliases(extraction.columns, all_aliases)
+        columns, omitted = filter_columns_with_unresolved_materials(
+            columns, resolution.unresolved
+        )
+        if omitted:
+            warnings.warn(
+                f"Se omitieron {len(omitted)} columnas de {dxf_path.name} "
+                "porque cruzan estratos no identificados sin resolver: "
+                + ", ".join(item["column_name"] for item in omitted),
+                RuntimeWarning,
+                stacklevel=2,
+            )
         columns = filter_columns(columns, selected_columns, excluded_columns)
         configs = prepare_column_configs(
-            columns, materials_for_file, target_frequency_hz
+            columns, resolution.materials, target_frequency_hz
         )
         for name, config in configs.items():
             csv_path = None if output_path is None else output_path / f"{name}.csv"

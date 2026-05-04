@@ -313,6 +313,7 @@ def calibrate_discretized_column(
     materials: MaterialLibrary,
     settings: CalibrationSettings | None = None,
 ) -> pd.DataFrame:
+    settings = settings or CalibrationSettings()
     calibrated = discretized_column.copy()
     theta_1 = []
     theta_2 = []
@@ -326,16 +327,21 @@ def calibrate_discretized_column(
     gamma_ref = []
     gqh_score = []
     mrdf_score = []
+    cache: dict[tuple[Any, ...], Any] = {}
 
     for row in calibrated.itertuples(index=False):
         material = materials.require(row.material_name)
-        curve = evaluate_dynamic_curve(material.model_at_sigma(row.sigma_v_center_kpa))
-        result = calibrate_dynamic_curve(
-            curve.calibration_data(),
-            gmax_pa=row.gmax_kpa * KPA_TO_PA,
-            tau_max_pa=max(row.tau_kpa * KPA_TO_PA, MIN_FLOAT),
-            settings=settings,
-        )
+        model = material.model_at_sigma(row.sigma_v_center_kpa)
+        key = _calibration_cache_key(row, material.name, model.model_type, settings)
+        if key not in cache:
+            curve = evaluate_dynamic_curve(model)
+            cache[key] = calibrate_dynamic_curve(
+                curve.calibration_data(),
+                gmax_pa=row.gmax_kpa * KPA_TO_PA,
+                tau_max_pa=max(row.tau_kpa * KPA_TO_PA, MIN_FLOAT),
+                settings=settings,
+            )
+        result = cache[key]
         theta_1.append(result.theta["theta_1"])
         theta_2.append(result.theta["theta_2"])
         theta_3.append(result.theta["theta_3"])
@@ -362,6 +368,22 @@ def calibrate_discretized_column(
     calibrated["gqh_score"] = gqh_score
     calibrated["mrdf_score"] = mrdf_score
     return calibrated
+
+
+def _calibration_cache_key(
+    row: Any,
+    material_name: str,
+    model_type: str,
+    settings: CalibrationSettings,
+) -> tuple[Any, ...]:
+    digits = settings.cache_precision
+    return (
+        material_name,
+        model_type,
+        round(float(row.sigma_v_center_kpa), digits),
+        round(float(row.gmax_kpa), digits),
+        round(float(row.tau_kpa), digits),
+    )
 
 
 def _segment_count_for_frequency(

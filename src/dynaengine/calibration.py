@@ -7,6 +7,7 @@ from typing import Any
 
 import numpy as np
 from scipy.interpolate import interp1d
+from scipy.optimize import minimize
 
 from dynaengine.constants import (
     DAMPING_CALIBRATION_WEIGHTS,
@@ -34,6 +35,18 @@ class CalibrationSettings:
     mrdf_init_points: int = 15
     mrdf_iterations: int = 100
     random_state: int = 1
+    optimizer: str = "scipy"
+    scipy_starts: int = 8
+    scipy_maxiter: int = 120
+    cache_precision: int = 4
+
+    def __post_init__(self) -> None:
+        if self.optimizer not in {"scipy", "bayesian"}:
+            raise ValueError("optimizer debe ser 'scipy' o 'bayesian'")
+        if self.scipy_starts <= 0:
+            raise ValueError("scipy_starts debe ser mayor a 0")
+        if self.scipy_maxiter <= 0:
+            raise ValueError("scipy_maxiter debe ser mayor a 0")
 
 
 @dataclass(frozen=True)
@@ -74,11 +87,6 @@ def calibrate_dynamic_curve(
     settings: CalibrationSettings | None = None,
 ) -> CalibrationResult:
     """Fit GQH and MRDF parameters to a target dynamic curve."""
-
-    if BayesianOptimization is None:
-        raise ImportError(
-            "bayesian-optimization es requerido para calibrar"
-        ) from _BAYES_OPT_IMPORT_ERROR
 
     settings = settings or CalibrationSettings()
     strain, ggmax, damping = _normalize_curve_data(curve_data)
@@ -199,6 +207,20 @@ class _CurveCalibrator:
             except Exception:
                 return -MAX_FLOAT
 
+        if self.settings.optimizer == "scipy":
+            return _maximize_with_scipy(
+                objective,
+                GQH_PARAMETER_BOUNDS,
+                random_state=self.settings.random_state,
+                starts=self.settings.scipy_starts,
+                maxiter=self.settings.scipy_maxiter,
+            )
+
+        if BayesianOptimization is None:
+            raise ImportError(
+                "bayesian-optimization es requerido para calibrar con optimizer='bayesian'"
+            ) from _BAYES_OPT_IMPORT_ERROR
+
         optimizer = BayesianOptimization(
             f=objective,
             pbounds=GQH_PARAMETER_BOUNDS,
@@ -223,6 +245,20 @@ class _CurveCalibrator:
                 return -MAX_FLOAT
             error = self.damping_cost.compute(self.damping, damping_curve, self.strain)
             return -error
+
+        if self.settings.optimizer == "scipy":
+            return _maximize_with_scipy(
+                objective,
+                MRDF_PARAMETER_BOUNDS,
+                random_state=self.settings.random_state + 101,
+                starts=self.settings.scipy_starts,
+                maxiter=self.settings.scipy_maxiter,
+            )
+
+        if BayesianOptimization is None:
+            raise ImportError(
+                "bayesian-optimization es requerido para calibrar con optimizer='bayesian'"
+            ) from _BAYES_OPT_IMPORT_ERROR
 
         optimizer = BayesianOptimization(
             f=objective,
@@ -343,7 +379,113 @@ class MRDFNoMasingRules:
         return 100 * loop_area / (4 * np.pi * elastic_energy) + self.d_min
 
     def compute_damping_vectorized(self, gamma_array: np.ndarray) -> np.ndarray:
-        return np.array([self.compute_damping(gamma) for gamma in gamma_array])
+        gamma_array = np.asarray(gamma_array, dtype=float)
+        result = np.full_like(gamma_array, self.d_min, dtype=float)
+        active = gamma_array >= 1e-8
+        if not np.any(active):
+            return result
+
+        gamma = gamma_array[active]
+        tau_y = self._compute_tau_backbone(gamma)
+        g_gamma = tau_y / gamma
+        ggmax = g_gamma / self.gmax_pa
+        factor = self._compute_mrdf(ggmax)
+
+        valid = factor > 0
+        active_result = np.full_like(gamma, -MAX_FLOAT, dtype=float)
+        if np.any(valid):
+            gamma_valid = gamma[valid]
+            tau_y_valid = tau_y[valid]
+            g_gamma_valid = g_gamma[valid]
+            factor_valid = factor[valid]
+
+            normalized = np.linspace(-1.0, 1.0, 100)
+            yc = gamma_valid[:, None] * normalized[None, :]
+            gamma_mid = (yc + gamma_valid[:, None]) / 2
+            tau_backbone = self._compute_tau_backbone(gamma_mid)
+            tc = (
+                factor_valid[:, None]
+                * (
+                    2 * tau_backbone
+                    - g_gamma_valid[:, None] * (yc + gamma_valid[:, None])
+                )
+                + g_gamma_valid[:, None] * (yc + gamma_valid[:, None])
+                - tau_y_valid[:, None]
+            )
+            y_plot = np.concatenate((yc, yc[:, ::-1]), axis=1)
+            t_plot = np.concatenate((tc, -tc[:, ::-1]), axis=1)
+            loop_area = np.abs(np.trapz(t_plot, y_plot, axis=1))
+            elastic_energy = tau_y_valid * gamma_valid / 2
+
+            damping = np.full_like(gamma_valid, self.d_min, dtype=float)
+            energy_valid = elastic_energy >= MIN_FLOAT
+            damping[energy_valid] = (
+                100
+                * loop_area[energy_valid]
+                / (4 * np.pi * elastic_energy[energy_valid])
+                + self.d_min
+            )
+            active_result[valid] = damping
+
+        result[active] = active_result
+        return result
+
+
+def _maximize_with_scipy(
+    objective,
+    bounds: dict[str, tuple[float, float]],
+    random_state: int,
+    starts: int,
+    maxiter: int,
+) -> dict[str, Any]:
+    names = list(bounds)
+    bound_values = [bounds[name] for name in names]
+    rng = np.random.default_rng(random_state)
+    initial_points = [_bounds_midpoint(bound_values)]
+    initial_points.extend(_random_points(bound_values, rng, max(0, starts - 1)))
+
+    best_value = MAX_FLOAT
+    best_x = initial_points[0]
+
+    def loss(x: np.ndarray) -> float:
+        params = {name: float(value) for name, value in zip(names, x)}
+        try:
+            score = float(objective(**params))
+        except Exception:
+            return MAX_FLOAT
+        if not np.isfinite(score):
+            return MAX_FLOAT
+        return -score
+
+    for point in initial_points:
+        result = minimize(
+            loss,
+            point,
+            method="Powell",
+            bounds=bound_values,
+            options={"maxiter": maxiter, "disp": False},
+        )
+        value = float(result.fun) if np.isfinite(result.fun) else MAX_FLOAT
+        if value < best_value:
+            best_value = value
+            best_x = np.asarray(result.x, dtype=float)
+
+    best_params = {name: float(value) for name, value in zip(names, best_x)}
+    return {"target": -best_value, "params": best_params}
+
+
+def _bounds_midpoint(bounds: list[tuple[float, float]]) -> np.ndarray:
+    return np.asarray([(low + high) / 2 for low, high in bounds], dtype=float)
+
+
+def _random_points(
+    bounds: list[tuple[float, float]], rng: np.random.Generator, count: int
+) -> list[np.ndarray]:
+    points = []
+    for _ in range(count):
+        values = [rng.uniform(low, high) for low, high in bounds]
+        points.append(np.asarray(values, dtype=float))
+    return points
 
 
 class _GGmaxCalibrationCost:

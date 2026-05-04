@@ -40,6 +40,7 @@ class DxfColumnExtraction:
     unidentified_materials: list[str]
     failure_surfaces: dict[str, dict[str, Any]] = field(default_factory=dict)
     polygon_area_summary: list[dict[str, Any]] = field(default_factory=list)
+    area_notifications: list[dict[str, Any]] = field(default_factory=list)
 
 
 def extract_columns_from_dxf(
@@ -73,7 +74,9 @@ def extract_columns_from_dxf(
     if not failure:
         raise ValueError("No se encontraron superficies de falla")
 
-    x_positions_by_failure = _normalize_x_positions_by_failure(x_positions, len(failure))
+    x_positions_by_failure = _normalize_x_positions_by_failure(
+        x_positions, len(failure)
+    )
     failure_type_map = _normalize_failure_types(failure_types, len(failure))
     columns, _clean_polygons, failure_surfaces, area_summary = _construct_columns(
         external,
@@ -107,6 +110,7 @@ def extract_columns_from_dxf(
         unidentified_materials=unidentified,
         failure_surfaces=failure_surfaces,
         polygon_area_summary=area_summary,
+        area_notifications=_area_notifications(area_summary),
     )
 
 
@@ -165,7 +169,9 @@ def _normalize_x_positions_by_failure(
                 )
             values = _coerce_position_list(value)
             if not values:
-                raise ValueError(f"x_positions para {failure_name} no puede estar vacio")
+                raise ValueError(
+                    f"x_positions para {failure_name} no puede estar vacio"
+                )
             normalized[failure_name] = values
         missing = [name for name in names if name not in normalized]
         if missing:
@@ -333,7 +339,10 @@ def _merge_polygons_by_label(
             default=0.0,
         )
         source_small_area_scale = max(
-            (float(polygon.get("small_area_scale", MINIMUM_AREA_SCALE)) for polygon in polygons),
+            (
+                float(polygon.get("small_area_scale", MINIMUM_AREA_SCALE))
+                for polygon in polygons
+            ),
             default=MINIMUM_AREA_SCALE,
         )
         geometries = list(union.geoms) if isinstance(union, MultiPolygon) else [union]
@@ -363,7 +372,7 @@ def _generate_clean_polygons(
     external_pline: list,
     material_pline: list,
     text_data: list,
-    small_area_scale: float,
+    small_area_scale: float = MINIMUM_AREA_SCALE,
 ) -> tuple[list[tuple[str, dict[str, Any]]], float]:
     polygons = _generate_polygons(external_pline, material_pline)
     total_area = _total_section_area(polygons, external_pline)
@@ -412,9 +421,55 @@ def summarize_polygon_areas(
                 "area_ratio_to_total": round(ratio, ROUND_DECIMALS),
                 "small_area_scale": small_area_scale,
                 "is_small_area": bool(ratio < small_area_scale),
+                "is_unidentified_material": material_name.startswith(
+                    UNIDENTIFIED_PREFIX
+                ),
+                **_geometry_summary(geometry),
             }
         )
     return sorted(summary, key=lambda item: item["area_m2"], reverse=True)
+
+
+def _area_notifications(area_summary: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    notifications = []
+    for item in area_summary:
+        notification_type = []
+        if item["is_small_area"]:
+            notification_type.append("small_area_omitted")
+        if item["is_unidentified_material"]:
+            notification_type.append("unidentified_material")
+        if not notification_type:
+            continue
+
+        notifications.append(
+            {
+                **item,
+                "notification_type": notification_type,
+                "omitted_from_discretization": bool(item["is_small_area"]),
+                "requires_material_resolution": bool(
+                    item["is_unidentified_material"] and not item["is_small_area"]
+                ),
+            }
+        )
+    return notifications
+
+
+def _geometry_summary(geometry) -> dict[str, Any]:
+    min_x, min_y, max_x, max_y = geometry.bounds
+    point = geometry.representative_point()
+    return {
+        "bounds": [
+            round(float(min_x), ROUND_DECIMALS),
+            round(float(min_y), ROUND_DECIMALS),
+            round(float(max_x), ROUND_DECIMALS),
+            round(float(max_y), ROUND_DECIMALS),
+        ],
+        "representative_point": [
+            round(float(point.x), ROUND_DECIMALS),
+            round(float(point.y), ROUND_DECIMALS),
+        ],
+        "geometry_wkt": geometry.wkt,
+    }
 
 
 def _is_small_area(area: float, total_area: float, small_area_scale: float) -> bool:
@@ -779,7 +834,9 @@ def _collapse_small_area_layers(layers: list[dict[str, Any]]) -> list[dict[str, 
     ]
 
 
-def _next_non_small_layer(layers: list[dict[str, Any]], start_index: int) -> dict[str, Any] | None:
+def _next_non_small_layer(
+    layers: list[dict[str, Any]], start_index: int
+) -> dict[str, Any] | None:
     for index in range(start_index, len(layers)):
         if not layers[index].get("is_small_area", False):
             return layers[index]
@@ -800,7 +857,9 @@ def _merge_adjacent_layers(layers: list[dict[str, Any]]) -> list[dict[str, Any]]
     for layer in layers:
         current = dict(layer)
         if "bottom" not in current:
-            current["bottom"] = round(current["top"] - current["thickness"], ROUND_DECIMALS)
+            current["bottom"] = round(
+                current["top"] - current["thickness"], ROUND_DECIMALS
+            )
         if merged and merged[-1]["material"] == current["material"]:
             merged[-1]["bottom"] = current["bottom"]
             merged[-1]["thickness"] = round(
