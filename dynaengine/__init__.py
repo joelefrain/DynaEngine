@@ -4,7 +4,11 @@ desktop frontend. They do not write files unless an explicit output path is
 provided by the caller.
 """
 
-from dynaengine.calibration import CalibrationResult, CalibrationSettings, calibrate_dynamic_curve
+from dynaengine.calibration import (
+    CalibrationResult,
+    CalibrationSettings,
+    calibrate_dynamic_curve,
+)
 from dynaengine.columns import (
     ColumnLayer,
     DiscretizationSettings,
@@ -16,8 +20,16 @@ from dynaengine.columns import (
     calibrate_discretized_column,
     discretize_column,
 )
-from dynaengine.dxf import DxfColumnExtraction, extract_columns_from_dxf
-from dynaengine.dynamic_curves import DynamicCurveResult, DynamicModelSpec, evaluate_dynamic_curve
+from dynaengine.dxf import (
+    DxfColumnExtraction,
+    extract_columns_from_dxf,
+    summarize_polygon_areas,
+)
+from dynaengine.dynamic_curves import (
+    DynamicCurveResult,
+    DynamicModelSpec,
+    evaluate_dynamic_curve,
+)
 from dynaengine.pipeline import (
     ColumnProcessingResult,
     export_dataframe,
@@ -56,6 +68,7 @@ __all__ = [
     "export_dataframe",
     "extract_columns_from_dxf",
     "filter_columns",
+    "summarize_polygon_areas",
     "plot_dxf_extraction",
     "plot_raw_column",
     "plot_discretized_column",

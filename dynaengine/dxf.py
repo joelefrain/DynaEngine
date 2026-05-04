@@ -16,7 +16,6 @@ from shapely.geometry import (
     MultiPoint,
     MultiPolygon,
     Point,
-    Polygon,
 )
 from shapely.ops import polygonize, unary_union
 from shapely.validation import make_valid
@@ -183,13 +182,15 @@ def _reassign_unlabeled_polygons(
     if not external_pline:
         return layer_polygons
 
-    external_area = Polygon(external_pline[0]).area
+    reference_area = _largest_polygon_area(
+        [polygon for _, polygon in layer_polygons] + empty_polygons
+    )
     new_polygons = []
     unidentified_index = 1
 
     for polygon in empty_polygons:
         geometry = polygon["geometry"]
-        if geometry.area >= MINIMUM_AREA_SCALE * external_area:
+        if reference_area > 0 and geometry.area >= MINIMUM_AREA_SCALE * reference_area:
             new_polygons.append(
                 (f"{UNIDENTIFIED_PREFIX} {unidentified_index}", polygon)
             )
@@ -244,6 +245,48 @@ def _generate_clean_polygons(
     return _merge_polygons_by_label(layer_polygons)
 
 
+def summarize_polygon_areas(
+    layer_polygons: list[tuple[str, dict[str, Any]]],
+    small_area_scale: float = MINIMUM_AREA_SCALE,
+) -> list[dict[str, Any]]:
+    """Summarize polygon areas and flag areas small relative to the largest area.
+
+    ``area_ratio_to_largest`` is computed as polygon area divided by the largest
+    polygon area in the supplied collection. A polygon is flagged as small when
+    that ratio is lower than ``small_area_scale``.
+    """
+
+    if small_area_scale < 0:
+        raise ValueError("small_area_scale debe ser mayor o igual a 0")
+
+    largest_area = _largest_polygon_area([polygon for _, polygon in layer_polygons])
+    if largest_area <= 0:
+        return []
+
+    summary = []
+    for material_name, polygon in layer_polygons:
+        geometry = polygon["geometry"]
+        area = float(geometry.area)
+        ratio = area / largest_area
+        summary.append(
+            {
+                "material_name": material_name,
+                "polygon_id": polygon.get("id"),
+                "area_m2": round(area, ROUND_DECIMALS),
+                "largest_area_m2": round(largest_area, ROUND_DECIMALS),
+                "area_ratio_to_largest": round(ratio, ROUND_DECIMALS),
+                "small_area_scale": small_area_scale,
+                "is_small_area": bool(ratio < small_area_scale),
+            }
+        )
+    return sorted(summary, key=lambda item: item["area_m2"], reverse=True)
+
+
+def _largest_polygon_area(polygons: list[dict[str, Any]]) -> float:
+    areas = [float(polygon["geometry"].area) for polygon in polygons]
+    return max(areas) if areas else 0.0
+
+
 def _construct_columns(
     external_pline: list,
     freatic_pline: list,
@@ -254,13 +297,20 @@ def _construct_columns(
     failure_types: dict[str, str],
 ) -> tuple[dict[str, Any], list, dict[str, dict[str, Any]]]:
     clean_polygons = _generate_clean_polygons(external_pline, material_pline, text_data)
-    freatic_depth = _intersection_pline_to_vline(freatic_pline[0], x_positions)
-    failure_surface_depth = _intersection_failure_surface(failure_pline, x_positions)
+    external_elevation = _external_elevation_at_positions(external_pline, x_positions)
+    freatic_elevation = _intersection_pline_to_vline(freatic_pline[0], x_positions)
+    failure_surface_elevation = _intersection_failure_surface(
+        failure_pline, x_positions
+    )
     failure_surfaces = _describe_failure_surfaces(
         external_pline, failure_pline, failure_types
     )
     columns = _generate_columns(
-        x_positions, clean_polygons, freatic_depth, failure_surface_depth
+        x_positions,
+        clean_polygons,
+        external_elevation,
+        freatic_elevation,
+        failure_surface_elevation,
     )
     return columns, clean_polygons, failure_surfaces
 
@@ -270,6 +320,16 @@ def _intersection_pline_to_vline(pline: list, x_positions: list[float]) -> list[
     for x in x_positions:
         y_values = _y_values_at_x([pline], x)
         result.append(float(max(y_values)) if y_values else float("nan"))
+    return result
+
+
+def _external_elevation_at_positions(
+    external_pline: list, x_positions: list[float]
+) -> list[float]:
+    result = []
+    for x in x_positions:
+        external_y = _top_y_at_x(external_pline, x)
+        result.append(float(external_y) if external_y is not None else float("nan"))
     return result
 
 
@@ -418,8 +478,9 @@ def _extract_y_values(geometry) -> list[float]:
 def _generate_columns(
     x_positions: list[float],
     layer_polygons: list[tuple[str, dict[str, Any]]],
-    freatic_depth: list[float],
-    failure_surface_depth: dict[str, list[float]],
+    external_elevation: list[float],
+    freatic_elevation: list[float],
+    failure_surface_elevation: dict[str, list[float]],
 ) -> dict[str, Any]:
     result = {}
     min_y = min(polygon["geometry"].bounds[1] for _, polygon in layer_polygons)
@@ -431,14 +492,16 @@ def _generate_columns(
         layers = _clean_and_deduplicate_layers(layers)
         freatic, failure_depth = _compute_column_metrics(
             layers,
-            freatic_depth[index],
-            failure_surface_depth,
+            external_elevation[index],
+            freatic_elevation[index],
+            failure_surface_elevation,
             index,
         )
         for layer in layers:
             del layer["top"]
         result[f"column_{index + 1}"] = {
             "layers": layers,
+            "external_elevation": _round_optional_elevation(external_elevation[index]),
             "freatic": freatic,
             "depth_failure_surface": failure_depth,
         }
@@ -489,23 +552,45 @@ def _clean_and_deduplicate_layers(layers: list[dict[str, Any]]) -> list[dict[str
 
 def _compute_column_metrics(
     layers: list[dict[str, Any]],
-    freatic_depth_at_x: float,
-    failure_surface_depth: dict[str, list[float]],
+    external_elevation_at_x: float,
+    freatic_elevation_at_x: float,
+    failure_surface_elevation: dict[str, list[float]],
     column_index: int,
 ) -> tuple[float | None, dict[str, float | None]]:
-    freatic = (
-        round(layers[0]["top"] - freatic_depth_at_x, ROUND_DECIMALS) if layers else None
+    if not layers or _is_missing_elevation(external_elevation_at_x):
+        return None, {name: None for name in failure_surface_elevation}
+
+    freatic = _depth_from_external_elevation(
+        external_elevation_at_x, freatic_elevation_at_x
     )
     failure_depth = {}
-    if layers and failure_surface_depth:
-        top_surface = layers[0]["top"]
-        for name, values in failure_surface_depth.items():
-            y_value = values[column_index]
-            if y_value is None or math.isnan(y_value):
-                failure_depth[name] = None
-            else:
-                failure_depth[name] = round(top_surface - y_value, ROUND_DECIMALS)
+    for name, values in failure_surface_elevation.items():
+        y_value = values[column_index]
+        failure_depth[name] = _depth_from_external_elevation(
+            external_elevation_at_x, y_value
+        )
     return freatic, failure_depth
+
+
+def _depth_from_external_elevation(
+    external_elevation_at_x: float, target_elevation_at_x: float | None
+) -> float | None:
+    if _is_missing_elevation(target_elevation_at_x):
+        return None
+    return round(
+        float(external_elevation_at_x) - float(target_elevation_at_x),
+        ROUND_DECIMALS,
+    )
+
+
+def _round_optional_elevation(value: float | None) -> float | None:
+    if _is_missing_elevation(value):
+        return None
+    return round(float(value), ROUND_DECIMALS)
+
+
+def _is_missing_elevation(value: float | None) -> bool:
+    return value is None or (isinstance(value, float) and math.isnan(value))
 
 
 def _flatten_columns_by_failure(
@@ -521,6 +606,7 @@ def _flatten_columns_by_failure(
             failure_data = failure_surfaces.get(failure_name, {})
             result[f"{section_name}-{column_name}-{failure_name}"] = {
                 "layers": data["layers"],
+                "external_elevation": data.get("external_elevation"),
                 "freatic": data["freatic"],
                 "failure_surface": failure_name,
                 "failure_type": failure_data.get("failure_type"),

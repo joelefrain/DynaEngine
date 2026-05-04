@@ -7,6 +7,7 @@ import matplotlib.patches as mpatches
 import pandas as pd
 
 from dynaengine.columns import ShearVelocityProfile
+from dynaengine.dxf import MINIMUM_AREA_SCALE, summarize_polygon_areas
 from dynaengine.dynamic_curves import DynamicCurveResult
 
 
@@ -62,6 +63,9 @@ def plot_dxf_extraction(
     clean_polygons: list[tuple[str, dict]],
     x_positions: list[float] | None = None,
     figsize: tuple[float, float] = (12, 8),
+    highlight_small_areas: bool = False,
+    small_area_scale: float = MINIMUM_AREA_SCALE,
+    annotate_areas: bool = False,
 ) -> tuple:
     """Plot DXF extraction with material areas colored differently.
 
@@ -69,6 +73,10 @@ def plot_dxf_extraction(
         clean_polygons: List of (material_name, polygon_dict) tuples
         x_positions: Optional list of x positions where columns are extracted
         figsize: Figure size
+        highlight_small_areas: If True, mark polygons whose area is small
+            relative to the largest polygon area.
+        small_area_scale: Small-area threshold as area/largest_area.
+        annotate_areas: If True, annotate each polygon with its area ratio.
 
     Returns:
         Tuple of (fig, axis)
@@ -77,29 +85,59 @@ def plot_dxf_extraction(
 
     material_names = sorted({name for name, _ in clean_polygons})
     color_map = {name: plt.cm.tab20(i % 20) for i, name in enumerate(material_names)}
+    area_summary = {
+        row["polygon_id"]: row
+        for row in summarize_polygon_areas(clean_polygons, small_area_scale)
+    }
 
     for material_name, polygon_dict in clean_polygons:
         geometry = polygon_dict["geometry"]
         if hasattr(geometry, "exterior"):
+            small_area = area_summary.get(polygon_dict.get("id"), {}).get(
+                "is_small_area", False
+            )
+            edgecolor = "crimson" if highlight_small_areas and small_area else "black"
+            linewidth = 2.0 if highlight_small_areas and small_area else 0.5
+            hatch = "///" if highlight_small_areas and small_area else None
             x_coords, y_coords = geometry.exterior.xy
             axis.fill(
                 x_coords,
                 y_coords,
                 alpha=0.6,
                 color=color_map[material_name],
-                edgecolor="black",
-                linewidth=0.5,
+                edgecolor=edgecolor,
+                linewidth=linewidth,
+                hatch=hatch,
                 label=material_name if material_name else "Unknown",
             )
-            axis.plot(x_coords, y_coords, color="black", linewidth=1)
+            axis.plot(x_coords, y_coords, color=edgecolor, linewidth=max(linewidth, 1))
+
+            if annotate_areas:
+                centroid = geometry.representative_point()
+                ratio = area_summary.get(polygon_dict.get("id"), {}).get(
+                    "area_ratio_to_largest"
+                )
+                if ratio is not None:
+                    axis.text(
+                        centroid.x,
+                        centroid.y,
+                        f"A/Amax={ratio:.3f}",
+                        ha="center",
+                        va="center",
+                        fontsize=7,
+                        bbox={
+                            "boxstyle": "round,pad=0.2",
+                            "fc": "white",
+                            "alpha": 0.65,
+                        },
+                    )
 
     if x_positions:
         for x in x_positions:
             axis.axvline(x=x, color="red", linestyle="--", linewidth=1.5, alpha=0.7)
 
-    axis.invert_yaxis()
     axis.set_xlabel("X (m)")
-    axis.set_ylabel("Profundidad (m)")
+    axis.set_ylabel("Elevacion Y (m)")
     axis.set_title("Secciones del DXF - Materiales por Color")
     axis.grid(True, alpha=0.25)
 
@@ -280,13 +318,8 @@ def plot_column_discretized_detailed(
 
     # Plot 3: Shear Velocity Profile
     ax = axes[2]
-    for idx, (_, row) in enumerate(discretized_column.iterrows()):
-        top = row["top_m"]
-        bottom = row["bottom_m"]
-        vs = row["shear_velocity_m_s"]
-
-        ax.plot([vs, vs], [top, bottom], color="steelblue", linewidth=2)
-        ax.fill_betweenx([top, bottom], 0, [vs, vs], alpha=0.3, color="steelblue")
+    vs_x, vs_y = _segment_profile_xy(discretized_column, "shear_velocity_m_s")
+    ax.plot(vs_x, vs_y, color="steelblue", linewidth=2)
 
     ax.set_xlim(0, max_vs * 1.1)
     ax.set_xlabel("Vs (m/s)")
@@ -295,13 +328,8 @@ def plot_column_discretized_detailed(
 
     # Plot 4: Natural Frequency Profile
     ax = axes[3]
-    for idx, (_, row) in enumerate(discretized_column.iterrows()):
-        top = row["top_m"]
-        bottom = row["bottom_m"]
-        freq = row["natural_frequency_hz"]
-
-        ax.plot([freq, freq], [top, bottom], color="darkgreen", linewidth=2)
-        ax.fill_betweenx([top, bottom], 0, [freq, freq], alpha=0.3, color="darkgreen")
+    freq_x, freq_y = _segment_profile_xy(discretized_column, "natural_frequency_hz")
+    ax.plot(freq_x, freq_y, color="darkgreen", linewidth=2)
 
     ax.set_xlim(0, max_freq * 1.1)
     ax.set_xlabel("Frecuencia Natural (Hz)")
@@ -314,3 +342,28 @@ def plot_column_discretized_detailed(
     fig.suptitle("Columna Discretizada - Vista Detallada", fontsize=14, weight="bold")
     fig.tight_layout()
     return fig, axes
+
+
+def _segment_profile_xy(
+    frame: pd.DataFrame, value_column: str
+) -> tuple[list[float], list[float]]:
+    """Build step-profile x/y coordinates without area fills."""
+
+    x_values: list[float] = []
+    y_values: list[float] = []
+    previous_value: float | None = None
+
+    for row in frame.itertuples(index=False):
+        top = float(getattr(row, "top_m"))
+        bottom = float(getattr(row, "bottom_m"))
+        value = float(getattr(row, value_column))
+
+        if previous_value is not None:
+            x_values.extend([previous_value, value])
+            y_values.extend([top, top])
+
+        x_values.extend([value, value])
+        y_values.extend([top, bottom])
+        previous_value = value
+
+    return x_values, y_values
