@@ -66,6 +66,10 @@ def plot_dxf_extraction(
     highlight_small_areas: bool = False,
     small_area_scale: float = MINIMUM_AREA_SCALE,
     annotate_areas: bool = False,
+    failure_polylines: dict[str, list[tuple[float, float]]] | list | None = None,
+    failure_surfaces: dict[str, dict] | None = None,
+    annotate_failures: bool = True,
+    annotate_x_positions: bool = False,
 ) -> tuple:
     """Plot DXF extraction with material areas colored differently.
 
@@ -77,6 +81,11 @@ def plot_dxf_extraction(
             relative to the total DXF section area.
         small_area_scale: Small-area threshold as area/total_area.
         annotate_areas: If True, annotate each polygon with its area ratio.
+        failure_polylines: Optional failure-surface polylines, either as a
+            dict keyed by failure name or a list ordered as failure_1, failure_2, ...
+        failure_surfaces: Optional failure-surface metadata used in labels.
+        annotate_failures: If True, place failure names on their polylines.
+        annotate_x_positions: If True, label extracted x-position guide lines.
 
     Returns:
         Tuple of (fig, axis)
@@ -132,9 +141,60 @@ def plot_dxf_extraction(
                         },
                     )
 
+    if failure_polylines:
+        for index, (failure_name, polyline) in enumerate(
+            _iter_named_polylines(failure_polylines), start=1
+        ):
+            if len(polyline) < 2:
+                continue
+
+            x_coords = [float(point[0]) for point in polyline]
+            y_coords = [float(point[1]) for point in polyline]
+            color = plt.cm.tab10((index - 1) % 10)
+            axis.plot(
+                x_coords,
+                y_coords,
+                color=color,
+                linestyle="-",
+                linewidth=2.0,
+                label=_failure_label(failure_name, failure_surfaces),
+                zorder=5,
+            )
+
+            if annotate_failures:
+                middle = len(x_coords) // 2
+                axis.text(
+                    x_coords[middle],
+                    y_coords[middle],
+                    failure_name,
+                    color=color,
+                    fontsize=8,
+                    weight="bold",
+                    ha="center",
+                    va="bottom",
+                    bbox={
+                        "boxstyle": "round,pad=0.2",
+                        "fc": "white",
+                        "alpha": 0.75,
+                    },
+                    zorder=6,
+                )
+
     if x_positions:
         for x in x_positions:
             axis.axvline(x=x, color="red", linestyle="--", linewidth=1.5, alpha=0.7)
+            if annotate_x_positions:
+                _, y_top = axis.get_ylim()
+                axis.text(
+                    x,
+                    y_top,
+                    f"x={x:g}",
+                    color="red",
+                    fontsize=8,
+                    rotation=90,
+                    ha="right",
+                    va="top",
+                )
 
     axis.set_xlabel("X (m)")
     axis.set_ylabel("Elevacion Y (m)")
@@ -147,6 +207,27 @@ def plot_dxf_extraction(
 
     fig.tight_layout()
     return fig, axis
+
+
+def _iter_named_polylines(
+    polylines: dict[str, list[tuple[float, float]]] | list,
+) -> list[tuple[str, list[tuple[float, float]]]]:
+    if isinstance(polylines, dict):
+        return list(polylines.items())
+    return [
+        (f"failure_{index + 1}", polyline) for index, polyline in enumerate(polylines)
+    ]
+
+
+def _failure_label(
+    failure_name: str,
+    failure_surfaces: dict[str, dict] | None,
+) -> str:
+    metadata = (failure_surfaces or {}).get(failure_name, {})
+    height = metadata.get("failure_height")
+    if height is None:
+        return failure_name
+    return f"{failure_name} H={float(height):.2f} m"
 
 
 def plot_raw_column(

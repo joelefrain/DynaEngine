@@ -26,7 +26,6 @@ from dynaengine import (  # noqa: E402
     prepare_column_configs,
     process_column_config,
 )
-from dynaengine.dxf import _generate_clean_polygons, _read_dxf_layers  # noqa: E402
 
 
 def _load_materials() -> list[dict]:
@@ -43,10 +42,13 @@ def test_plots() -> None:
         failure_types={name: "tipo_de_falla" for name in x_positions_by_failure},
     )
 
-    external, _freatic, material, _failure, text = _read_dxf_layers(dxf_path)
-    clean_polygons, _total_area = _generate_clean_polygons(external, material, text)
-
-    fig, _ax = plot_dxf_extraction(clean_polygons, x_positions=[250, 480])
+    fig, _ax = plot_dxf_extraction(
+        extraction.clean_polygons,
+        x_positions=[250, 480],
+        failure_polylines=extraction.failure_polylines,
+        failure_surfaces=extraction.failure_surfaces,
+        annotate_x_positions=True,
+    )
     plt.close(fig)
 
     configs = prepare_column_configs(

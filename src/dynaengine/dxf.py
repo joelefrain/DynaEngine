@@ -41,6 +41,10 @@ class DxfColumnExtraction:
     failure_surfaces: dict[str, dict[str, Any]] = field(default_factory=dict)
     polygon_area_summary: list[dict[str, Any]] = field(default_factory=list)
     area_notifications: list[dict[str, Any]] = field(default_factory=list)
+    clean_polygons: list[tuple[str, dict[str, Any]]] = field(default_factory=list)
+    failure_polylines: dict[str, list[tuple[float, float]]] = field(
+        default_factory=dict
+    )
 
 
 def extract_columns_from_dxf(
@@ -78,7 +82,7 @@ def extract_columns_from_dxf(
         x_positions, len(failure)
     )
     failure_type_map = _normalize_failure_types(failure_types, len(failure))
-    columns, _clean_polygons, failure_surfaces, area_summary = _construct_columns(
+    columns, clean_polygons, failure_surfaces, area_summary = _construct_columns(
         external,
         freatic,
         material,
@@ -94,6 +98,10 @@ def extract_columns_from_dxf(
     if aliases:
         flat_columns = _apply_material_aliases(flat_columns, aliases)
 
+    clean_polygons = [
+        (aliases.get(name, name), polygon) for name, polygon in clean_polygons
+    ]
+    area_summary = _apply_material_aliases_to_area_summary(area_summary, aliases)
     material_names = sorted(
         {
             layer["material"]
@@ -111,6 +119,11 @@ def extract_columns_from_dxf(
         failure_surfaces=failure_surfaces,
         polygon_area_summary=area_summary,
         area_notifications=_area_notifications(area_summary),
+        clean_polygons=clean_polygons,
+        failure_polylines={
+            f"failure_{index + 1}": [(float(x), float(y)) for x, y in polyline]
+            for index, polyline in enumerate(failure)
+        },
     )
 
 
@@ -452,6 +465,29 @@ def _area_notifications(area_summary: list[dict[str, Any]]) -> list[dict[str, An
             }
         )
     return notifications
+
+
+def _apply_material_aliases_to_area_summary(
+    area_summary: list[dict[str, Any]],
+    aliases: dict[str, str],
+) -> list[dict[str, Any]]:
+    if not aliases:
+        return area_summary
+
+    aliased_summary = []
+    for item in area_summary:
+        material_name = item.get("material_name")
+        aliased_name = aliases.get(material_name, material_name)
+        aliased_summary.append(
+            {
+                **item,
+                "material_name": aliased_name,
+                "is_unidentified_material": str(aliased_name).startswith(
+                    UNIDENTIFIED_PREFIX
+                ),
+            }
+        )
+    return aliased_summary
 
 
 def _geometry_summary(geometry) -> dict[str, Any]:

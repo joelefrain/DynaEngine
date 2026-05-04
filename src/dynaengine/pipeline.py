@@ -104,7 +104,12 @@ def resolve_unidentified_materials_detailed(
     actions: UnidentifiedMaterialActions | None = None,
     material_aliases: dict[str, str] | None = None,
 ) -> MaterialResolution:
-    """Resolve unidentified strata without forcing unresolved ones to be used."""
+    """Resolve unidentified strata without forcing unresolved ones to be used.
+
+    Explicit aliases/actions take precedence over a material that already uses
+    the unidentified DXF name, so notebooks can demonstrate reassignment or
+    characterization with a clearer final material name.
+    """
 
     actions = actions or {}
     incoming_aliases = material_aliases or {}
@@ -118,9 +123,6 @@ def resolve_unidentified_materials_detailed(
 
     unresolved = []
     for unidentified in unidentified_materials:
-        if unidentified in material_names:
-            continue
-
         if unidentified in incoming_aliases:
             target = str(incoming_aliases[unidentified])
             if target not in material_names:
@@ -131,19 +133,29 @@ def resolve_unidentified_materials_detailed(
             continue
 
         action = actions.get(unidentified)
-        if action is None:
-            unresolved.append(unidentified)
+        if action is not None:
+            alias, material = _resolve_unidentified_action(
+                unidentified, action, material_names
+            )
+            if material is not None:
+                material_name = str(material["material_name"])
+                if material_name in material_names:
+                    raise ValueError(
+                        f"La caracterizacion de '{unidentified}' usa un nombre "
+                        f"ya caracterizado: {material_name}. Use assign para "
+                        "reasignar a ese material o indique un nombre nuevo."
+                    )
+                resolved_materials.append(material)
+                material_names.add(material_name)
+            if alias is not None:
+                source, target = alias
+                resolved_aliases[source] = target
             continue
 
-        alias, material = _resolve_unidentified_action(
-            unidentified, action, material_names
-        )
-        if material is not None:
-            resolved_materials.append(material)
-            material_names.add(str(material["material_name"]))
-        if alias is not None:
-            source, target = alias
-            resolved_aliases[source] = target
+        if unidentified in material_names:
+            continue
+
+        unresolved.append(unidentified)
 
     return MaterialResolution(
         materials=resolved_materials,
