@@ -106,9 +106,10 @@ def run_dxf() -> None:
     with TemporaryDirectory() as tmp:
         dxf_path = Path(tmp) / "simple_section.dxf"
         _build_demo_dxf(dxf_path)
-        extraction = extract_columns_from_dxf(dxf_path, x_positions=[25, 75])
+        extraction = extract_columns_from_dxf(dxf_path, x_positions=[25, 75], failure_types="demo")
         configs = prepare_column_configs(extraction.columns, MATERIALS, target_frequency_hz=25)
         print("Materiales detectados:", extraction.material_names)
+        print("Superficies de falla:", extraction.failure_surfaces)
         for name, config in configs.items():
             result = process_column_config(config, calibrate=False)
             print(name, "capas=", len(result.raw), "segmentos=", len(result.discretized))

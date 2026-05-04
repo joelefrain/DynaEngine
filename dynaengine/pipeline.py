@@ -19,6 +19,8 @@ from dynaengine.columns import (
 )
 from dynaengine.dxf import extract_columns_from_dxf
 
+FailureTypeInput = dict[str | int, str] | list[str] | tuple[str, ...] | str
+
 
 @dataclass(frozen=True)
 class ColumnProcessingResult:
@@ -74,9 +76,13 @@ def process_column_config(
     discretized = discretize_column(column, materials, settings)
     calibrated = None
     if calibrate:
-        calibrated = calibrate_discretized_column(discretized, materials, settings=calibration_settings)
+        calibrated = calibrate_discretized_column(
+            discretized, materials, settings=calibration_settings
+        )
 
-    result = ColumnProcessingResult(raw=raw, discretized=discretized, calibrated=calibrated)
+    result = ColumnProcessingResult(
+        raw=raw, discretized=discretized, calibrated=calibrated
+    )
     if output_csv is not None:
         export_dataframe(result.result, output_csv)
     return result
@@ -88,6 +94,7 @@ def process_dxf_folder(
     materials: list[dict[str, Any]],
     target_frequency_hz: float,
     calibrate: bool = False,
+    failure_types_by_file: dict[str, FailureTypeInput] | None = None,
     selected_columns: list[str] | None = None,
     excluded_columns: list[str] | None = None,
     output_dir: str | Path | None = None,
@@ -103,12 +110,17 @@ def process_dxf_folder(
     results = {}
     for dxf_path in sorted(section_folder.glob("*.dxf")):
         positions = _positions_for_file(dxf_path, x_positions_by_file)
-        extraction = extract_columns_from_dxf(dxf_path, positions)
+        failure_types = _failure_types_for_file(dxf_path, failure_types_by_file)
+        extraction = extract_columns_from_dxf(
+            dxf_path, positions, failure_types=failure_types
+        )
         columns = filter_columns(extraction.columns, selected_columns, excluded_columns)
         configs = prepare_column_configs(columns, materials, target_frequency_hz)
         for name, config in configs.items():
             csv_path = None if output_path is None else output_path / f"{name}.csv"
-            results[name] = process_column_config(config, calibrate=calibrate, output_csv=csv_path)
+            results[name] = process_column_config(
+                config, calibrate=calibrate, output_csv=csv_path
+            )
     return results
 
 
@@ -122,8 +134,22 @@ def export_dataframe(frame: pd.DataFrame, path: str | Path) -> Path:
     return output_path
 
 
-def _positions_for_file(dxf_path: Path, x_positions_by_file: dict[str, list[float]]) -> list[float]:
+def _positions_for_file(
+    dxf_path: Path, x_positions_by_file: dict[str, list[float]]
+) -> list[float]:
     for key in (dxf_path.name, dxf_path.stem, str(dxf_path)):
         if key in x_positions_by_file:
             return x_positions_by_file[key]
     raise ValueError(f"No se definieron x_positions para {dxf_path.name}")
+
+
+def _failure_types_for_file(
+    dxf_path: Path,
+    failure_types_by_file: dict[str, FailureTypeInput] | None,
+) -> FailureTypeInput | None:
+    if not failure_types_by_file:
+        return None
+    for key in (dxf_path.name, dxf_path.stem, str(dxf_path)):
+        if key in failure_types_by_file:
+            return failure_types_by_file[key]
+    return None

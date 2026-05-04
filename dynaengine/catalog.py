@@ -55,7 +55,9 @@ def dynamic_curve_catalog_for_frontend() -> dict[str, Any]:
     return result
 
 
-def normalize_soil_parameters(model_type: str, parameters: dict[str, Any]) -> dict[str, Any]:
+def normalize_soil_parameters(
+    model_type: str, parameters: dict[str, Any]
+) -> dict[str, Any]:
     model_type = normalize_model_type(model_type)
     normalized = {}
 
@@ -104,8 +106,13 @@ def validate_dynamic_model_definition(
 
     for name, metadata in model_parameters.items():
         internal_name = PARAMETER_ALIASES.get(name, name)
-        if internal_name not in soil_parameters or soil_parameters[internal_name] is None:
-            raise ValueError(f"Falta el parametro requerido '{internal_name}' para {model_type}")
+        if (
+            internal_name not in soil_parameters
+            or soil_parameters[internal_name] is None
+        ):
+            raise ValueError(
+                f"Falta el parametro requerido '{internal_name}' para {model_type}"
+            )
 
         if metadata.get("type") != "float":
             continue
@@ -130,11 +137,17 @@ def validate_user_curve_data(curve_data: dict[str, Any] | None) -> None:
     required = ("strain", "ggmax", damping_key)
     for key in required:
         if key not in curve_data:
-            raise ValueError(f"Falta el campo '{key}' en la curva definida por el usuario")
+            raise ValueError(
+                f"Falta el campo '{key}' en la curva definida por el usuario"
+            )
 
     lengths = {len(curve_data[key]) for key in required}
     if len(lengths) != 1:
-        raise ValueError("strain, ggmax y damping deben tener la misma cantidad de puntos")
+        raise ValueError(
+            "strain, ggmax y damping deben tener la misma cantidad de puntos"
+        )
 
     if not lengths or next(iter(lengths)) < 2:
-        raise ValueError("La curva definida por el usuario necesita al menos dos puntos")
+        raise ValueError(
+            "La curva definida por el usuario necesita al menos dos puntos"
+        )

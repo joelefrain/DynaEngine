@@ -20,6 +20,10 @@ def build_demo_dxf(path: Path) -> None:
     modelspace.add_lwpolyline([(0, 18), (100, 18)], dxfattribs={"layer": "MATERIAL"})
     modelspace.add_lwpolyline([(0, 25), (100, 25)], dxfattribs={"layer": "FREATIC"})
     modelspace.add_lwpolyline([(0, 12), (100, 12)], dxfattribs={"layer": "SUP_FALLA"})
-    modelspace.add_text("Arena", dxfattribs={"layer": "TEXTO", "height": 1.5}).set_placement((10, 24))
-    modelspace.add_text("Grava", dxfattribs={"layer": "TEXTO", "height": 1.5}).set_placement((10, 8))
+    modelspace.add_text(
+        "Arena", dxfattribs={"layer": "TEXTO", "height": 1.5}
+    ).set_placement((10, 24))
+    modelspace.add_text(
+        "Grava", dxfattribs={"layer": "TEXTO", "height": 1.5}
+    ).set_placement((10, 8))
     doc.saveas(path)

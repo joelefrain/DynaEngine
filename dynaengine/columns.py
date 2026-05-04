@@ -39,8 +39,12 @@ class ShearVelocityProfile:
             raise ValueError("El perfil Vs requiere al menos dos puntos")
         if any(value <= 0 for value in self.velocity_m_s):
             raise ValueError("Vs debe ser mayor a 0")
-        if any(self.depth_m[i] >= self.depth_m[i + 1] for i in range(len(self.depth_m) - 1)):
-            raise ValueError("Las profundidades del perfil Vs deben estar en orden creciente")
+        if any(
+            self.depth_m[i] >= self.depth_m[i + 1] for i in range(len(self.depth_m) - 1)
+        ):
+            raise ValueError(
+                "Las profundidades del perfil Vs deben estar en orden creciente"
+            )
 
     def average_between(self, top_m: float, bottom_m: float) -> float:
         if top_m >= bottom_m:
@@ -53,7 +57,9 @@ class ShearVelocityProfile:
         cut_depths.append(bottom_m)
         cut_depths = np.asarray(cut_depths, dtype=float)
         segment_thickness = cut_depths[1:] - cut_depths[:-1]
-        segment_velocity = np.asarray([self.velocity_at(depth) for depth in cut_depths[:-1]])
+        segment_velocity = np.asarray(
+            [self.velocity_at(depth) for depth in cut_depths[:-1]]
+        )
         return float((bottom_m - top_m) / np.sum(segment_thickness / segment_velocity))
 
     def velocity_at(self, depth_m: float) -> float:
@@ -75,7 +81,13 @@ class Material:
 
     @classmethod
     def from_mapping(cls, data: dict[str, Any]) -> "Material":
-        required = ("material_name", "unit_weight_kn_m3", "shear_velocity", "shear_properties", "dynamic_model")
+        required = (
+            "material_name",
+            "unit_weight_kn_m3",
+            "shear_velocity",
+            "shear_properties",
+            "dynamic_model",
+        )
         missing = [key for key in required if key not in data or data[key] is None]
         if missing:
             raise ValueError(f"Material incompleto. Faltan: {missing}")
@@ -109,7 +121,9 @@ class MaterialLibrary:
     materials: dict[str, Material]
 
     @classmethod
-    def from_mappings(cls, material_data: Iterable[dict[str, Any]]) -> "MaterialLibrary":
+    def from_mappings(
+        cls, material_data: Iterable[dict[str, Any]]
+    ) -> "MaterialLibrary":
         materials = [Material.from_mapping(item) for item in material_data]
         names = [material.name for material in materials]
         duplicates = sorted({name for name in names if names.count(name) > 1})
@@ -144,18 +158,35 @@ class StratigraphicColumn:
     layers: tuple[ColumnLayer, ...]
     water_table_depth_m: float | None = None
     failure_surface_depth_m: float | None = None
+    failure_surface_name: str | None = None
+    failure_type: str | None = None
+    failure_height_m: float | None = None
     name: str | None = None
 
     @classmethod
-    def from_mapping(cls, data: dict[str, Any], name: str | None = None) -> "StratigraphicColumn":
+    def from_mapping(
+        cls, data: dict[str, Any], name: str | None = None
+    ) -> "StratigraphicColumn":
         if "layers" not in data or not data["layers"]:
             raise ValueError("La columna requiere layers")
+        failure_height = data.get("failure_height", data.get("failure_height_m"))
+        failure_surface_name = data.get(
+            "failure_surface", data.get("failure_surface_name")
+        )
+        failure_type = data.get("failure_type")
         return cls(
             layers=tuple(ColumnLayer.from_mapping(layer) for layer in data["layers"]),
-            water_table_depth_m=None if data.get("freatic") is None else float(data["freatic"]),
+            water_table_depth_m=None
+            if data.get("freatic") is None
+            else float(data["freatic"]),
             failure_surface_depth_m=None
             if data.get("depth_failure_surface") is None
             else float(data["depth_failure_surface"]),
+            failure_surface_name=None
+            if failure_surface_name is None
+            else str(failure_surface_name),
+            failure_type=None if failure_type is None else str(failure_type),
+            failure_height_m=None if failure_height is None else float(failure_height),
             name=name or data.get("name"),
         )
 
@@ -181,7 +212,9 @@ class DiscretizationSettings:
             raise ValueError("max_segments_per_layer debe ser mayor a 0")
 
 
-def build_raw_column_table(column: StratigraphicColumn, materials: MaterialLibrary) -> pd.DataFrame:
+def build_raw_column_table(
+    column: StratigraphicColumn, materials: MaterialLibrary
+) -> pd.DataFrame:
     rows = []
     top = 0.0
     for index, layer in enumerate(column.layers, start=1):
@@ -207,6 +240,10 @@ def build_raw_column_table(column: StratigraphicColumn, materials: MaterialLibra
                 "gmax_kpa": gmax_kpa,
                 "tau_kpa": tau_kpa,
                 "k0": material.k0,
+                "failure_surface_name": column.failure_surface_name,
+                "failure_type": column.failure_type,
+                "failure_height_m": column.failure_height_m,
+                "failure_surface_depth_m": column.failure_surface_depth_m,
                 "passes_failure_surface": _passes_failure_surface(column, top, bottom),
             }
         )
@@ -257,7 +294,13 @@ def discretize_column(
                     "gmax_kpa": gmax_kpa,
                     "tau_kpa": tau_kpa,
                     "k0": material.k0,
-                    "passes_failure_surface": _passes_failure_surface(column, top, bottom),
+                    "failure_surface_name": column.failure_surface_name,
+                    "failure_type": column.failure_type,
+                    "failure_height_m": column.failure_height_m,
+                    "failure_surface_depth_m": column.failure_surface_depth_m,
+                    "passes_failure_surface": _passes_failure_surface(
+                        column, top, bottom
+                    ),
                 }
             )
 
@@ -366,7 +409,9 @@ def _average_shear_strength(material: Material, sigma_v_kpa: float) -> float:
     return float(0.5 * (tau_min + tau_max))
 
 
-def _passes_failure_surface(column: StratigraphicColumn, top_m: float, bottom_m: float) -> bool:
+def _passes_failure_surface(
+    column: StratigraphicColumn, top_m: float, bottom_m: float
+) -> bool:
     if column.failure_surface_depth_m is None:
         return False
     return top_m <= column.failure_surface_depth_m <= bottom_m

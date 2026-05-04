@@ -74,7 +74,9 @@ def calibrate_dynamic_curve(
     """Fit GQH and MRDF parameters to a target dynamic curve."""
 
     if BayesianOptimization is None:
-        raise ImportError("bayesian-optimization es requerido para calibrar") from _BAYES_OPT_IMPORT_ERROR
+        raise ImportError(
+            "bayesian-optimization es requerido para calibrar"
+        ) from _BAYES_OPT_IMPORT_ERROR
 
     settings = settings or CalibrationSettings()
     strain, ggmax, damping = _normalize_curve_data(curve_data)
@@ -113,7 +115,9 @@ def calibrate_dynamic_curve(
     )
 
 
-def _normalize_curve_data(curve_data: dict[str, Any]) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+def _normalize_curve_data(
+    curve_data: dict[str, Any],
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     damping_key = "damp" if "damp" in curve_data else "damping"
     required = ("strain", "ggmax", damping_key)
     missing = [key for key in required if key not in curve_data]
@@ -165,12 +169,18 @@ class _CurveCalibrator:
         self.settings = settings
 
         half_indexes = np.where(self.ggmax <= 0.5)[0]
-        self.gamma_ref = self.strain[half_indexes[0]] if len(half_indexes) else np.median(self.strain)
+        self.gamma_ref = (
+            self.strain[half_indexes[0]]
+            if len(half_indexes)
+            else np.median(self.strain)
+        )
         self.ggmax_cost = _GGmaxCalibrationCost(self.strain, b)
         self.damping_cost = _DampingCalibrationCost()
 
     def calibrate_gqh(self) -> dict[str, Any]:
-        def objective(theta_1: float, theta_2: float, theta_3: float, theta_5: float) -> float:
+        def objective(
+            theta_1: float, theta_2: float, theta_3: float, theta_5: float
+        ) -> float:
             if theta_1 + theta_2 > 1:
                 return -MAX_FLOAT
             params = {
@@ -228,7 +238,9 @@ class _CurveCalibrator:
         model = GQHModelFormulation({**theta, "theta_4": DEFAULT_THETA_4})
         return model.ggmax_model(self.strain, self.gamma_ref)
 
-    def compute_mrdf_curve(self, theta: dict[str, float], mrdf: dict[str, float]) -> np.ndarray:
+    def compute_mrdf_curve(
+        self, theta: dict[str, float], mrdf: dict[str, float]
+    ) -> np.ndarray:
         model = GQHModelFormulation({**theta, "theta_4": DEFAULT_THETA_4})
         backbone = BackboneWrapper(model, self.gmax_pa, self.tau_max_pa)
         return MRDFNoMasingRules(backbone, mrdf).compute_damping_vectorized(self.strain)
@@ -262,18 +274,24 @@ class GQHModelFormulation:
 
 
 class BackboneWrapper:
-    def __init__(self, gqh_model: GQHModelFormulation, gmax_pa: float, tau_max_pa: float) -> None:
+    def __init__(
+        self, gqh_model: GQHModelFormulation, gmax_pa: float, tau_max_pa: float
+    ) -> None:
         self.model = gqh_model
         self.gmax_pa = gmax_pa
         self.tau_max_pa = tau_max_pa
         self.gamma_ref = tau_max_pa / gmax_pa
 
-    def compute_theta_tau(self, gamma: np.ndarray, gamma_norm: np.ndarray) -> np.ndarray:
+    def compute_theta_tau(
+        self, gamma: np.ndarray, gamma_norm: np.ndarray
+    ) -> np.ndarray:
         return self.model.compute_theta_tau(gamma, gamma_norm)
 
 
 class MRDFNoMasingRules:
-    def __init__(self, backbone_model: BackboneWrapper, parameters: dict[str, float]) -> None:
+    def __init__(
+        self, backbone_model: BackboneWrapper, parameters: dict[str, float]
+    ) -> None:
         self.backbone_model = backbone_model
         self.p1 = parameters["P1"]
         self.p2 = parameters["P2"]
@@ -293,7 +311,10 @@ class MRDFNoMasingRules:
         return (self.tau_max_pa * 2 * gamma / self.gamma_ref) / (
             1
             + gamma / self.gamma_ref
-            + np.sqrt((1 + gamma / self.gamma_ref) ** 2 - 4 * theta_tau * gamma / self.gamma_ref)
+            + np.sqrt(
+                (1 + gamma / self.gamma_ref) ** 2
+                - 4 * theta_tau * gamma / self.gamma_ref
+            )
         )
 
     def compute_damping(self, gamma: float, n_points: int = 100) -> float:
@@ -306,8 +327,14 @@ class MRDFNoMasingRules:
         yc = np.linspace(-gamma, gamma, n_points)
         gamma_mid = (yc + gamma) / 2
         tau_backbone = self._compute_tau_backbone(gamma_mid)
-        tc = factor * (2 * tau_backbone - g_gamma * (yc + gamma)) + g_gamma * (yc + gamma) - tau_y
-        loop_area = abs(np.trapz(np.concatenate((tc, -tc)), np.concatenate((yc, yc[::-1]))))
+        tc = (
+            factor * (2 * tau_backbone - g_gamma * (yc + gamma))
+            + g_gamma * (yc + gamma)
+            - tau_y
+        )
+        loop_area = abs(
+            np.trapz(np.concatenate((tc, -tc)), np.concatenate((yc, yc[::-1])))
+        )
         elastic_energy = tau_y * gamma / 2
         if elastic_energy < MIN_FLOAT:
             return self.d_min
@@ -332,8 +359,12 @@ class _GGmaxCalibrationCost:
             return float(np.mean((reference_curve - model_curve) ** 2))
 
         gamma_ref = self._compute_gamma_ref(reference_curve)
-        error_before = self._curvature_cost(reference_curve, model_curve, gamma_ref, before=True)
-        error_after = self._curvature_cost(reference_curve, model_curve, gamma_ref, before=False)
+        error_before = self._curvature_cost(
+            reference_curve, model_curve, gamma_ref, before=True
+        )
+        error_after = self._curvature_cost(
+            reference_curve, model_curve, gamma_ref, before=False
+        )
         area_error = self._area_error(reference_curve, model_curve)
         gamma50_error = self._gamma50_error(gamma_ref, model_curve)
         weights = GGMAX_CALIBRATION_WEIGHTS
@@ -383,7 +414,9 @@ class _GGmaxCalibrationCost:
             return float(np.mean((ref - mod) ** 2)) if ref.size else 0.0
         curvature_weight = self._safe_curvature(ref, log_gamma)
         weights = GGMAX_CALIBRATION_WEIGHTS
-        curvature_factor = weights["upper_curvature"] if before else weights["lower_curvature"]
+        curvature_factor = (
+            weights["upper_curvature"] if before else weights["lower_curvature"]
+        )
         sample_weights = weights["bias"] + curvature_factor * curvature_weight
         return float(np.sum(sample_weights * (ref - mod) ** 2) / np.sum(sample_weights))
 
@@ -397,7 +430,9 @@ class _GGmaxCalibrationCost:
             return np.ones_like(curvature)
         return curvature / max_curvature
 
-    def _area_error(self, reference_curve: np.ndarray, model_curve: np.ndarray) -> float:
+    def _area_error(
+        self, reference_curve: np.ndarray, model_curve: np.ndarray
+    ) -> float:
         diff = np.abs(reference_curve - model_curve)
         area = np.trapz(diff, self.log_gamma)
         total_area = np.trapz(np.abs(reference_curve), self.log_gamma)
@@ -407,18 +442,22 @@ class _GGmaxCalibrationCost:
 
 
 class _DampingCalibrationCost:
-    def compute(self, reference_curve: np.ndarray, model_curve: np.ndarray, strain: np.ndarray) -> float:
+    def compute(
+        self, reference_curve: np.ndarray, model_curve: np.ndarray, strain: np.ndarray
+    ) -> float:
         reference_curve = np.nan_to_num(reference_curve, nan=0.0)
         model_curve = np.nan_to_num(model_curve, nan=0.0)
         log_gamma = np.log10(np.nan_to_num(strain, nan=MIN_FLOAT) + MIN_FLOAT)
         ref_normalized, mod_normalized = self._normalize(reference_curve, model_curve)
         weights = DAMPING_CALIBRATION_WEIGHTS
         total_error = (
-            weights["area"] * self._area_error(ref_normalized, mod_normalized, log_gamma)
+            weights["area"]
+            * self._area_error(ref_normalized, mod_normalized, log_gamma)
             + weights["boundary"] * self._extreme_error(reference_curve, model_curve)
             + weights["monotonic"] * self._monotonicity_error(mod_normalized)
             + weights["smooth"] * self._smoothness_error(mod_normalized, log_gamma)
-            + weights["oscillation"] * self._oscillation_penalty(mod_normalized, log_gamma)
+            + weights["oscillation"]
+            * self._oscillation_penalty(mod_normalized, log_gamma)
             + weights["slope"] * self._slope_penalty(mod_normalized, log_gamma)
             + weights["spike"] * self._spike_penalty(mod_normalized, log_gamma)
         )
@@ -427,12 +466,16 @@ class _DampingCalibrationCost:
         return float(total_error)
 
     @staticmethod
-    def _normalize(reference_curve: np.ndarray, model_curve: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    def _normalize(
+        reference_curve: np.ndarray, model_curve: np.ndarray
+    ) -> tuple[np.ndarray, np.ndarray]:
         max_reference = max(float(np.max(reference_curve)), MIN_FLOAT)
         return reference_curve / max_reference, model_curve / max_reference
 
     @staticmethod
-    def _area_error(reference_curve: np.ndarray, model_curve: np.ndarray, log_gamma: np.ndarray) -> float:
+    def _area_error(
+        reference_curve: np.ndarray, model_curve: np.ndarray, log_gamma: np.ndarray
+    ) -> float:
         diff = np.abs(reference_curve - model_curve)
         spread = np.std(log_gamma)
         if spread <= MIN_FLOAT:
@@ -448,7 +491,10 @@ class _DampingCalibrationCost:
 
     @staticmethod
     def _extreme_error(reference_curve: np.ndarray, model_curve: np.ndarray) -> float:
-        error = abs(reference_curve[0] - model_curve[0]) ** 2 + 1.5 * abs(reference_curve[-1] - model_curve[-1]) ** 2
+        error = (
+            abs(reference_curve[0] - model_curve[0]) ** 2
+            + 1.5 * abs(reference_curve[-1] - model_curve[-1]) ** 2
+        )
         return float(np.clip(error, 0, 1))
 
     @staticmethod
@@ -459,21 +505,33 @@ class _DampingCalibrationCost:
 
     def _monotonicity_error(self, model_curve: np.ndarray) -> float:
         negative = np.abs(np.diff(model_curve)[np.diff(model_curve) < 0])
-        return 0.0 if len(negative) == 0 else float(np.clip(np.sum(negative) / len(model_curve), 0, 1))
+        return (
+            0.0
+            if len(negative) == 0
+            else float(np.clip(np.sum(negative) / len(model_curve), 0, 1))
+        )
 
-    def _smoothness_error(self, model_curve: np.ndarray, log_gamma: np.ndarray) -> float:
+    def _smoothness_error(
+        self, model_curve: np.ndarray, log_gamma: np.ndarray
+    ) -> float:
         d1 = self._safe_gradient(model_curve, log_gamma)
         d2 = self._safe_gradient(d1, log_gamma)
         return float(np.clip(np.mean(np.abs(d2)), 0, 1))
 
-    def _oscillation_penalty(self, model_curve: np.ndarray, log_gamma: np.ndarray) -> float:
+    def _oscillation_penalty(
+        self, model_curve: np.ndarray, log_gamma: np.ndarray
+    ) -> float:
         d1 = self._safe_gradient(model_curve, log_gamma)
         return float(np.sum(np.diff(np.sign(d1)) != 0) / len(model_curve))
 
     def _slope_penalty(self, model_curve: np.ndarray, log_gamma: np.ndarray) -> float:
         d1 = self._safe_gradient(model_curve, log_gamma)
         negative = np.abs(d1[d1 < 0])
-        return 0.0 if len(negative) == 0 else float(np.clip(np.sum(negative) / len(model_curve), 0, 1))
+        return (
+            0.0
+            if len(negative) == 0
+            else float(np.clip(np.sum(negative) / len(model_curve), 0, 1))
+        )
 
     def _spike_penalty(self, model_curve: np.ndarray, log_gamma: np.ndarray) -> float:
         d1 = self._safe_gradient(model_curve, log_gamma)
