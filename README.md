@@ -36,7 +36,11 @@ export_dataframe(frame, "salidas/columna.csv")
 
 ## Materiales
 
-No hay valores geotecnicos predefinidos. Cada material debe traer nombre, peso unitario, perfil Vs, resistencia al corte y modelo dinamico completo. Si el DXF genera un `Estrato no identificado`, el frontend puede asociarlo a un material existente o crear un material nuevo antes de discretizar/calibrar. Si un estrato no identificado queda sin resolver, deben omitirse las columnas que lo cruzan; `filter_columns_with_unresolved_materials` devuelve la lista de columnas omitidas para notificar al usuario.
+No hay valores geotecnicos predefinidos. Cada material debe traer nombre, peso unitario, perfil Vs, resistencia al corte y modelo dinamico. `sigma_vertical` no es obligatorio en el material: durante el flujo de columnas se recalcula como esfuerzo efectivo vertical del segmento antes de evaluar la curva dinamica.
+
+Para evaluar una curva dinamica de forma aislada, fuera de columnas/discretizacion, los modelos dependientes de confinamiento usan `sigma_vertical=100 kPa` por defecto si no se entrega el valor. La funcion emite una advertencia en ese caso; para calibraciones o comparaciones directas conviene pasar `sigma_vertical` explicitamente.
+
+Si el DXF genera un `Estrato no identificado`, el frontend puede asociarlo a un material existente o crear un material nuevo antes de discretizar/calibrar. Si un estrato no identificado queda sin resolver, deben omitirse las columnas que lo cruzan; `filter_columns_with_unresolved_materials` devuelve la lista de columnas omitidas para notificar al usuario.
 
 El ejemplo `section_01.dxf` lee sus materiales desde:
 

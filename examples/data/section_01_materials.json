@@ -22,7 +22,6 @@
     },
     "dynamic_model": {
       "model_type": "darendeli_2001",
-      "sigma_vertical": 100,
       "soil_parameters": {
         "IP": 0.0,
         "OCR": 1.0,
@@ -55,7 +54,6 @@
     },
     "dynamic_model": {
       "model_type": "menq_2003",
-      "sigma_vertical": 100,
       "soil_parameters": {
         "Cu": 18.0,
         "D50": 8.0,
@@ -87,7 +85,6 @@
     },
     "dynamic_model": {
       "model_type": "wang_2021",
-      "sigma_vertical": 100,
       "soil_parameters": {
         "soil_group": "Nonplastic silty sand group",
         "Cu": 2.0,
@@ -122,7 +119,6 @@
     },
     "dynamic_model": {
       "model_type": "rollins_2020",
-      "sigma_vertical": 100,
       "soil_parameters": {
         "Cu": 1.0,
         "k0": 1.0
@@ -152,7 +148,6 @@
     },
     "dynamic_model": {
       "model_type": "ishibashi_1993",
-      "sigma_vertical": 100,
       "soil_parameters": {
         "IP": 50.0,
         "k0": 0.5
@@ -182,7 +177,6 @@
     },
     "dynamic_model": {
       "model_type": "rojas_2019",
-      "sigma_vertical": 100,
       "soil_parameters": {
         "k0": 1.0
       }

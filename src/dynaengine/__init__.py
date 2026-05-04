@@ -25,6 +25,7 @@ from .dxf import (
     summarize_polygon_areas,
 )
 from .dynamic_curves import (
+    DEFAULT_SIGMA_VERTICAL_KPA,
     DynamicCurveResult,
     DynamicModelSpec,
     evaluate_dynamic_curve,
@@ -59,6 +60,7 @@ __all__ = [
     "DxfColumnExtraction",
     "DynamicCurveResult",
     "DynamicModelSpec",
+    "DEFAULT_SIGMA_VERTICAL_KPA",
     "Material",
     "MaterialLibrary",
     "MaterialResolution",

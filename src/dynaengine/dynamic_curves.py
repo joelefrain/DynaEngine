@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import warnings
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -28,6 +29,16 @@ from dynaengine.constants import (
 
 DATA_DIR = Path(__file__).resolve().parent / "data"
 THEORETICAL_CURVES_PATH = DATA_DIR / "theoretical_curves.json"
+DEFAULT_SIGMA_VERTICAL_KPA = 100.0
+STRESS_DEPENDENT_MODELS = {
+    "darendeli_2001",
+    "calibrated_darendeli",
+    "menq_2003",
+    "rollins_2020",
+    "ishibashi_1993",
+    "wang_2021",
+    "rojas_2019",
+}
 
 
 @dataclass(frozen=True)
@@ -37,6 +48,7 @@ class DynamicModelSpec:
     soil_parameters: dict[str, Any]
     curve_data: dict[str, Any] | None = None
     gmax_mpa: float = 10.0
+    sigma_vertical_assumed: bool = False
 
     @classmethod
     def from_mapping(cls, data: dict[str, Any]) -> "DynamicModelSpec":
@@ -49,17 +61,23 @@ class DynamicModelSpec:
         validate_dynamic_model_definition(model_type, soil_parameters, curve_data)
 
         sigma_vertical = source.get("sigma_vertical", source.get("sigma_vertical_kpa"))
-        if model_type != "seed_1970" and sigma_vertical is None:
-            raise ValueError(f"{model_type} requiere sigma_vertical en kPa")
+        sigma_vertical_assumed = (
+            sigma_vertical is None and model_type in STRESS_DEPENDENT_MODELS
+        )
 
         return cls(
             model_type=model_type,
-            sigma_vertical_kpa=None
-            if sigma_vertical is None
-            else float(sigma_vertical),
+            sigma_vertical_kpa=(
+                DEFAULT_SIGMA_VERTICAL_KPA
+                if sigma_vertical_assumed
+                else None
+                if sigma_vertical is None
+                else float(sigma_vertical)
+            ),
             soil_parameters=soil_parameters,
             curve_data=curve_data,
             gmax_mpa=float(source.get("gmax_mpa", 10.0)),
+            sigma_vertical_assumed=sigma_vertical_assumed,
         )
 
     def with_sigma_vertical(self, sigma_vertical_kpa: float) -> "DynamicModelSpec":
@@ -69,6 +87,7 @@ class DynamicModelSpec:
             soil_parameters=dict(self.soil_parameters),
             curve_data=self.curve_data,
             gmax_mpa=self.gmax_mpa,
+            sigma_vertical_assumed=False,
         )
 
 
@@ -111,6 +130,16 @@ def evaluate_dynamic_curve(
     p = model_spec.soil_parameters
     sigma = model_spec.sigma_vertical_kpa
     gmax_pa = model_spec.gmax_mpa * MPA_TO_PA
+
+    if model_spec.sigma_vertical_assumed:
+        warnings.warn(
+            f"{model_type} se evaluara con sigma_vertical="
+            f"{DEFAULT_SIGMA_VERTICAL_KPA:g} kPa por defecto. Pase "
+            "sigma_vertical explicitamente si esta calibrando o comparando una "
+            "curva dinamica fuera del flujo de columnas.",
+            RuntimeWarning,
+            stacklevel=2,
+        )
 
     if model_type == "darendeli_2001":
         strain, ggmax, damping = _darendeli_2001(p, sigma)
