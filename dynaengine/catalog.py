@@ -105,6 +105,10 @@ def validate_dynamic_model_definition(
         model_parameters = model_parameters[group_key]
 
     for name, metadata in model_parameters.items():
+        # Skip metadata keys that aren't parameters
+        if not isinstance(metadata, dict) or "type" not in metadata:
+            continue
+
         internal_name = PARAMETER_ALIASES.get(name, name)
         if (
             internal_name not in soil_parameters

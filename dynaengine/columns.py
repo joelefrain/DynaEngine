@@ -51,7 +51,6 @@ class ShearVelocityProfile:
             raise ValueError("top_m debe ser menor a bottom_m")
 
         depths = np.asarray(self.depth_m, dtype=float)
-        velocities = np.asarray(self.velocity_m_s, dtype=float)
         cut_depths = [top_m]
         cut_depths.extend(float(depth) for depth in depths if top_m < depth < bottom_m)
         cut_depths.append(bottom_m)

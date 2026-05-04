@@ -26,6 +26,14 @@ from dynaengine.pipeline import (
     process_column_config,
     process_dxf_folder,
 )
+from dynaengine.plots import (
+    plot_column_discretized_detailed,
+    plot_dxf_extraction,
+    plot_raw_column,
+    plot_discretized_column,
+    plot_dynamic_curve,
+    plot_shear_velocity_profile,
+)
 
 __all__ = [
     "CalibrationResult",
@@ -48,6 +56,12 @@ __all__ = [
     "export_dataframe",
     "extract_columns_from_dxf",
     "filter_columns",
+    "plot_dxf_extraction",
+    "plot_raw_column",
+    "plot_discretized_column",
+    "plot_column_discretized_detailed",
+    "plot_dynamic_curve",
+    "plot_shear_velocity_profile",
     "prepare_column_configs",
     "process_column_config",
     "process_dxf_folder",

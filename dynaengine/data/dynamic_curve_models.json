@@ -128,6 +128,7 @@
         ],
         "model_parameters": {
             "clean_sand_and_gravel_group": {
+                "screen_name": "Grupo de arena y grava limpia",
                 "e": {
                     "screen_name": "e",
                     "large_name": "Índice de vacios",
@@ -168,6 +169,7 @@
                 }
             },
             "nonplastic_silty_sand_group": {
+                "screen_name": "Grupo de arena limosa no plástica",
                 "e": {
                     "screen_name": "e",
                     "large_name": "Índice de vacios",
@@ -185,6 +187,7 @@
                 }
             },
             "clayed_soil_group": {
+                "screen_name": "Grupo de suelo arcilloso",
                 "e": {
                     "screen_name": "e",
                     "large_name": "Índice de vacios",
