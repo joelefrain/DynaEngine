@@ -10,19 +10,9 @@ DynaEngine queda reorganizado como un paquete de calculo local para una aplicaci
 
 ## Estructura
 
-- `dynaengine/`: nucleo estable que debe consumir el frontend.
-- `dynaengine/data/`: catalogo de modelos y curvas discretas requeridas por los autores.
+- `src/dynaengine/data/`: catalogo de modelos y curvas discretas requeridas por los autores.
 - `examples/`: scripts ejecutables y pequenos.
 - `notebooks/`: notebooks limpios que ejecutan el nucleo nuevo.
-
-## Uso rapido
-
-```powershell
-python main.py curves
-python main.py calibration
-python main.py column
-python main.py dxf
-```
 
 ## Regla de guardado
 
@@ -40,7 +30,7 @@ No hay valores geotecnicos predefinidos. Cada material debe traer nombre, peso u
 
 Para evaluar una curva dinamica de forma aislada, fuera de columnas/discretizacion, los modelos dependientes de confinamiento usan `sigma_vertical=100 kPa` por defecto si no se entrega el valor. La funcion emite una advertencia en ese caso; para calibraciones o comparaciones directas conviene pasar `sigma_vertical` explicitamente.
 
-Si el DXF genera un `Estrato no identificado`, el frontend puede asociarlo a un material existente o crear un material nuevo antes de discretizar/calibrar. Si un estrato no identificado queda sin resolver, deben omitirse las columnas que lo cruzan; `filter_columns_with_unresolved_materials` devuelve la lista de columnas omitidas para notificar al usuario.
+Si el DXF genera un `Estrato no identificado`, el usuario puede asociarlo a un material existente o crear un material nuevo antes de discretizar/calibrar. Si un estrato no identificado queda sin resolver, deben omitirse las columnas que lo cruzan; `filter_columns_with_unresolved_materials` devuelve la lista de columnas omitidas para notificar al usuario.
 
 El ejemplo `section_01.dxf` lee sus materiales desde:
 
@@ -69,4 +59,4 @@ Los campos `failure_id`, `failure_surface`, `failure_type`, `failure_height`, `x
 
 ## Calibracion
 
-La calibracion GQ/H + MRDF se ejecuta por estrato discretizado. Depende de la curva dinamica del material evaluada con el esfuerzo efectivo vertical del segmento, de `Gmax` calculado con peso unitario y Vs, y de `tau_max` calculado con resistencia al corte, `k0` y esfuerzo efectivo. `CalibrationSettings` usa por defecto `optimizer="scipy"` para una calibracion local multistart mas rapida, manteniendo las mismas funciones de costo de `old_dynaengine`; `optimizer="bayesian"` sigue disponible.
+La calibracion GQ/H + MRDF se ejecuta por estrato discretizado. Depende de la curva dinamica del material evaluada con el esfuerzo efectivo vertical del segmento, de `Gmax` calculado con peso unitario y Vs, y de `tau_max` calculado con resistencia al corte, `k0` y esfuerzo efectivo. `CalibrationSettings` usa por defecto `optimizer="scipy"` para una calibracion local multistart mas rapida; `optimizer="bayesian"` también está disponible, aunque es más costosa.
