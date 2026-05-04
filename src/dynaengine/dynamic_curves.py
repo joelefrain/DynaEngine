@@ -166,7 +166,18 @@ def _load_theoretical_curves() -> dict[str, Any]:
     }
 
 
-_DISCRETE_CURVES = _load_theoretical_curves()
+_DISCRETE_CURVES: dict[str, Any] | None = None
+
+
+def _discrete_curves() -> dict[str, Any]:
+    global _DISCRETE_CURVES
+    if _DISCRETE_CURVES is None:
+        if not THEORETICAL_CURVES_PATH.exists():
+            raise FileNotFoundError(
+                f"No existe el archivo de curvas teoricas: {THEORETICAL_CURVES_PATH}"
+            )
+        _DISCRETE_CURVES = _load_theoretical_curves()
+    return _DISCRETE_CURVES
 
 
 def _mean_effective_stress_atm(k0: float, sigma_vertical_kpa: float) -> float:
@@ -371,26 +382,26 @@ def _rojas_2019(
     sigma_m_kpa = (
         _mean_effective_stress_atm(p["k0"], sigma_vertical_kpa) * ATM_PRESSURE_KPA
     )
-    available = np.array(list(_DISCRETE_CURVES["rojas"]["G_Gmax"].keys()), dtype=float)
+    available = np.array(list(_discrete_curves()["rojas"]["G_Gmax"].keys()), dtype=float)
     if sigma_m_kpa < available.min():
         raise ValueError("Confinamiento fuera del rango disponible para Rojas (2019)")
     sigma_ref = max(available[available <= sigma_m_kpa])
-    source_strain = _DISCRETE_CURVES["gamma"]
+    source_strain = _discrete_curves()["gamma"]
     ggmax = _interp_log(
-        source_strain, strain, _DISCRETE_CURVES["rojas"]["G_Gmax"][sigma_ref]
+        source_strain, strain, _discrete_curves()["rojas"]["G_Gmax"][sigma_ref]
     )
     damping = _interp_log(
-        source_strain, strain, _DISCRETE_CURVES["rojas"]["D"][sigma_ref]
+        source_strain, strain, _discrete_curves()["rojas"]["D"][sigma_ref]
     )
     return strain, ggmax, damping
 
 
 def _seed_idriss_1970(p: dict[str, Any]) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     strain = SEED_IDRISS_SHEAR_STRAIN
-    source_strain = _DISCRETE_CURVES["gamma"]
+    source_strain = _discrete_curves()["gamma"]
     band = p["band"]
-    ggmax = _interp_log(source_strain, strain, _DISCRETE_CURVES["seed"]["G_Gmax"][band])
-    damping = _interp_log(source_strain, strain, _DISCRETE_CURVES["seed"]["D"][band])
+    ggmax = _interp_log(source_strain, strain, _discrete_curves()["seed"]["G_Gmax"][band])
+    damping = _interp_log(source_strain, strain, _discrete_curves()["seed"]["D"][band])
     return strain, ggmax, damping
 
 

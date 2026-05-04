@@ -1,0 +1,8 @@
+numpy
+pandas
+scipy
+matplotlib
+bayesian-optimization
+ezdxf
+shapely
+openpyxl

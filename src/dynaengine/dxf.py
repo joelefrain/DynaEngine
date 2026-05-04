@@ -8,7 +8,6 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-import ezdxf
 from shapely.geometry import (
     GeometryCollection,
     LineString,
@@ -27,6 +26,11 @@ MINIMUM_AREA_SCALE = 0.01
 MINIMUM_AREA = 1.0
 UNIDENTIFIED_PREFIX = "Estrato no identificado"
 FailureTypeInput = dict[str | int, str] | list[str] | tuple[str, ...] | str
+FailurePositionInput = (
+    dict[str | int, float | list[float] | tuple[float, ...]]
+    | list[float]
+    | tuple[float, ...]
+)
 
 
 @dataclass(frozen=True)
@@ -35,36 +39,51 @@ class DxfColumnExtraction:
     material_names: list[str]
     unidentified_materials: list[str]
     failure_surfaces: dict[str, dict[str, Any]] = field(default_factory=dict)
+    polygon_area_summary: list[dict[str, Any]] = field(default_factory=list)
 
 
 def extract_columns_from_dxf(
     section_path: str | Path,
-    x_positions: list[float],
+    x_positions: FailurePositionInput,
     material_aliases: dict[str, str] | None = None,
     failure_types: FailureTypeInput | None = None,
+    small_area_scale: float = MINIMUM_AREA_SCALE,
 ) -> DxfColumnExtraction:
     """Extract non-discretized columns from a DXF section.
 
-    The function never reads from a global input folder. The caller must pass an
-    explicit DXF path.
+    ``x_positions`` must be associated with a specific failure surface. Use a
+    mapping such as ``{"failure_1": [10.0, 20.0], "failure_2": [35.0]}`` or
+    numeric keys ``{1: [10.0, 20.0]}``. A plain list is only accepted when the
+    DXF contains a single failure surface.
+
+    Small polygons are evaluated against the total DXF section area. During
+    column extraction, intervals that belong to polygons below
+    ``small_area_scale`` are omitted and their thickness is split between the
+    adjacent upper and lower layers up to the small-interval centreline.
     """
 
     path = Path(section_path)
     if not path.exists():
         raise FileNotFoundError(f"No existe el DXF: {path}")
-    if not x_positions:
-        raise ValueError("x_positions no puede estar vacio")
+
+    if small_area_scale < 0:
+        raise ValueError("small_area_scale debe ser mayor o igual a 0")
 
     external, freatic, material, failure, text = _read_dxf_layers(path)
+    if not failure:
+        raise ValueError("No se encontraron superficies de falla")
+
+    x_positions_by_failure = _normalize_x_positions_by_failure(x_positions, len(failure))
     failure_type_map = _normalize_failure_types(failure_types, len(failure))
-    columns, _clean_polygons, failure_surfaces = _construct_columns(
+    columns, _clean_polygons, failure_surfaces, area_summary = _construct_columns(
         external,
         freatic,
         material,
         failure,
         text,
-        x_positions,
+        x_positions_by_failure,
         failure_type_map,
+        small_area_scale,
     )
     flat_columns = _flatten_columns_by_failure(columns, path.stem, failure_surfaces)
 
@@ -87,10 +106,16 @@ def extract_columns_from_dxf(
         material_names=material_names,
         unidentified_materials=unidentified,
         failure_surfaces=failure_surfaces,
+        polygon_area_summary=area_summary,
     )
 
 
 def _read_dxf_layers(path: Path) -> tuple[list, list, list, list, list]:
+    try:
+        import ezdxf
+    except ImportError as exc:  # pragma: no cover - exercised only without dependency
+        raise ImportError("ezdxf es requerido para leer archivos DXF") from exc
+
     dxf_file = ezdxf.readfile(path)
     return (
         _read_dxf_pline(dxf_file, "EXTERNAL"),
@@ -123,6 +148,60 @@ def _read_dxf_text(dxf_file, layer_name: str) -> list[tuple[str, tuple[float, fl
     if not text_data:
         raise ValueError(f"No se encontraron textos en la capa '{layer_name}'")
     return text_data
+
+
+def _normalize_x_positions_by_failure(
+    x_positions: FailurePositionInput,
+    failure_count: int,
+) -> dict[str, list[float]]:
+    names = [f"failure_{index + 1}" for index in range(failure_count)]
+    if isinstance(x_positions, dict):
+        normalized: dict[str, list[float]] = {}
+        for key, value in x_positions.items():
+            failure_name = _normalize_failure_key(key, failure_count)
+            if failure_name is None:
+                raise ValueError(
+                    f"La llave de x_positions '{key}' no corresponde a una falla valida"
+                )
+            values = _coerce_position_list(value)
+            if not values:
+                raise ValueError(f"x_positions para {failure_name} no puede estar vacio")
+            normalized[failure_name] = values
+        missing = [name for name in names if name not in normalized]
+        if missing:
+            raise ValueError(
+                "Faltan x_positions asociados a estas fallas: " + ", ".join(missing)
+            )
+        return normalized
+
+    values = _coerce_position_list(x_positions)
+    if not values:
+        raise ValueError("x_positions no puede estar vacio")
+    if failure_count != 1:
+        raise ValueError(
+            "x_positions debe asociarse a una falla especifica cuando existe mas de una superficie de falla"
+        )
+    return {"failure_1": values}
+
+
+def _normalize_failure_key(key: str | int, failure_count: int) -> str | None:
+    names = [f"failure_{index + 1}" for index in range(failure_count)]
+    key_text = str(key)
+    if key_text in names:
+        return key_text
+    if key_text.isdigit():
+        index = int(key_text) - 1
+        if 0 <= index < failure_count:
+            return names[index]
+    return None
+
+
+def _coerce_position_list(
+    value: float | list[float] | tuple[float, ...],
+) -> list[float]:
+    if isinstance(value, (list, tuple)):
+        return [float(item) for item in value]
+    return [float(value)]
 
 
 def _generate_polygons(
@@ -177,20 +256,19 @@ def _assign_polygons(
 def _reassign_unlabeled_polygons(
     layer_polygons: list[tuple[str, dict[str, Any]]],
     empty_polygons: list[dict[str, Any]],
-    external_pline: list,
+    total_area: float,
+    small_area_scale: float,
 ) -> list[tuple[str, dict[str, Any]]]:
-    if not external_pline:
-        return layer_polygons
+    if not layer_polygons and not empty_polygons:
+        return []
 
-    reference_area = _largest_polygon_area(
-        [polygon for _, polygon in layer_polygons] + empty_polygons
-    )
     new_polygons = []
     unidentified_index = 1
 
     for polygon in empty_polygons:
         geometry = polygon["geometry"]
-        if reference_area > 0 and geometry.area >= MINIMUM_AREA_SCALE * reference_area:
+        is_small = _is_small_area(geometry.area, total_area, small_area_scale)
+        if not is_small:
             new_polygons.append(
                 (f"{UNIDENTIFIED_PREFIX} {unidentified_index}", polygon)
             )
@@ -210,71 +288,128 @@ def _reassign_unlabeled_polygons(
     return [*layer_polygons, *new_polygons]
 
 
+def _with_area_metadata(
+    layer_polygons: list[tuple[str, dict[str, Any]]],
+    total_area: float,
+    small_area_scale: float,
+) -> list[tuple[str, dict[str, Any]]]:
+    result = []
+    for name, polygon in layer_polygons:
+        geometry = polygon["geometry"]
+        area = float(geometry.area)
+        ratio = area / total_area if total_area > 0 else 0.0
+        result.append(
+            (
+                name,
+                {
+                    **polygon,
+                    "area_m2": area,
+                    "total_area_m2": total_area,
+                    "area_ratio_to_total": ratio,
+                    "small_area_scale": small_area_scale,
+                    "is_small_area": _is_small_area(area, total_area, small_area_scale),
+                },
+            )
+        )
+    return result
+
+
 def _merge_polygons_by_label(
     layer_polygons: list[tuple[str, dict[str, Any]]],
 ) -> list[tuple[str, dict[str, Any]]]:
     grouped = defaultdict(list)
     for name, polygon in layer_polygons:
-        grouped[name].append(polygon["geometry"])
+        grouped[(name, bool(polygon.get("is_small_area", False)))].append(polygon)
 
     result = []
     new_id = 1
-    for name, geometries in grouped.items():
+    for (name, is_small_area), polygons in grouped.items():
         union = unary_union(
-            [geometry.buffer(CLOSED_POLY_TOLERANCE) for geometry in geometries]
+            [polygon["geometry"].buffer(CLOSED_POLY_TOLERANCE) for polygon in polygons]
         )
         union = union.buffer(-CLOSED_POLY_TOLERANCE)
-        if isinstance(union, MultiPolygon):
-            for geometry in union.geoms:
-                result.append((name, {"id": new_id, "geometry": geometry}))
-                new_id += 1
-        else:
-            result.append((name, {"id": new_id, "geometry": union}))
+        source_total_area = max(
+            (float(polygon.get("total_area_m2", 0.0)) for polygon in polygons),
+            default=0.0,
+        )
+        source_small_area_scale = max(
+            (float(polygon.get("small_area_scale", MINIMUM_AREA_SCALE)) for polygon in polygons),
+            default=MINIMUM_AREA_SCALE,
+        )
+        geometries = list(union.geoms) if isinstance(union, MultiPolygon) else [union]
+        for geometry in geometries:
+            area = float(geometry.area)
+            result.append(
+                (
+                    name,
+                    {
+                        "id": new_id,
+                        "geometry": geometry,
+                        "area_m2": area,
+                        "total_area_m2": source_total_area,
+                        "area_ratio_to_total": area / source_total_area
+                        if source_total_area > 0
+                        else 0.0,
+                        "small_area_scale": source_small_area_scale,
+                        "is_small_area": is_small_area,
+                    },
+                )
+            )
             new_id += 1
     return result
 
 
 def _generate_clean_polygons(
-    external_pline: list, material_pline: list, text_data: list
-) -> list:
+    external_pline: list,
+    material_pline: list,
+    text_data: list,
+    small_area_scale: float,
+) -> tuple[list[tuple[str, dict[str, Any]]], float]:
     polygons = _generate_polygons(external_pline, material_pline)
+    total_area = _total_section_area(polygons, external_pline)
     layer_polygons, empty_polygons = _assign_polygons(text_data, polygons)
     layer_polygons = _reassign_unlabeled_polygons(
-        layer_polygons, empty_polygons, external_pline
+        layer_polygons, empty_polygons, total_area, small_area_scale
     )
-    return _merge_polygons_by_label(layer_polygons)
+    layer_polygons = _with_area_metadata(layer_polygons, total_area, small_area_scale)
+    return _merge_polygons_by_label(layer_polygons), total_area
 
 
 def summarize_polygon_areas(
     layer_polygons: list[tuple[str, dict[str, Any]]],
     small_area_scale: float = MINIMUM_AREA_SCALE,
+    total_area_m2: float | None = None,
 ) -> list[dict[str, Any]]:
-    """Summarize polygon areas and flag areas small relative to the largest area.
+    """Summarize polygon areas and flag areas small relative to total DXF area.
 
-    ``area_ratio_to_largest`` is computed as polygon area divided by the largest
-    polygon area in the supplied collection. A polygon is flagged as small when
-    that ratio is lower than ``small_area_scale``.
+    ``area_ratio_to_total`` is computed as polygon area divided by the total
+    section area. A polygon is flagged as small when this ratio is lower than
+    ``small_area_scale``. When ``total_area_m2`` is omitted, the union area of
+    the supplied polygons is used.
     """
 
     if small_area_scale < 0:
         raise ValueError("small_area_scale debe ser mayor o igual a 0")
 
-    largest_area = _largest_polygon_area([polygon for _, polygon in layer_polygons])
-    if largest_area <= 0:
+    if total_area_m2 is None:
+        total_area = _union_area([polygon for _, polygon in layer_polygons])
+    else:
+        total_area = float(total_area_m2)
+    if total_area <= 0:
         return []
 
     summary = []
     for material_name, polygon in layer_polygons:
         geometry = polygon["geometry"]
         area = float(geometry.area)
-        ratio = area / largest_area
+        ratio = area / total_area
         summary.append(
             {
                 "material_name": material_name,
                 "polygon_id": polygon.get("id"),
                 "area_m2": round(area, ROUND_DECIMALS),
-                "largest_area_m2": round(largest_area, ROUND_DECIMALS),
-                "area_ratio_to_largest": round(ratio, ROUND_DECIMALS),
+                "total_area_m2": round(total_area, ROUND_DECIMALS),
+                "area_ratio_to_total": round(ratio, ROUND_DECIMALS),
                 "small_area_scale": small_area_scale,
                 "is_small_area": bool(ratio < small_area_scale),
             }
@@ -282,9 +417,38 @@ def summarize_polygon_areas(
     return sorted(summary, key=lambda item: item["area_m2"], reverse=True)
 
 
-def _largest_polygon_area(polygons: list[dict[str, Any]]) -> float:
-    areas = [float(polygon["geometry"].area) for polygon in polygons]
-    return max(areas) if areas else 0.0
+def _is_small_area(area: float, total_area: float, small_area_scale: float) -> bool:
+    if small_area_scale <= 0 or total_area <= 0:
+        return False
+    return float(area) / float(total_area) < small_area_scale
+
+
+def _union_area(polygons: list[dict[str, Any]]) -> float:
+    geometries = [polygon["geometry"] for polygon in polygons]
+    if not geometries:
+        return 0.0
+    return float(unary_union(geometries).area)
+
+
+def _total_section_area(polygons: list[dict[str, Any]], external_pline: list) -> float:
+    external_polygons = _polygonize_external(external_pline)
+    if external_polygons:
+        return float(unary_union(external_polygons).area)
+    return _union_area(polygons)
+
+
+def _polygonize_external(external_pline: list) -> list:
+    lines = []
+    for polyline in external_pline:
+        coords = [(float(x), float(y)) for x, y in polyline]
+        if len(coords) >= 2:
+            if coords[0] != coords[-1]:
+                coords.append(coords[0])
+            lines.append(LineString(coords))
+    if not lines:
+        return []
+    union = unary_union(lines).buffer(CLOSED_POLY_TOLERANCE)
+    return [make_valid(polygon) for polygon in polygonize(union)]
 
 
 def _construct_columns(
@@ -293,26 +457,39 @@ def _construct_columns(
     material_pline: list,
     failure_pline: list,
     text_data: list,
-    x_positions: list[float],
+    x_positions_by_failure: dict[str, list[float]],
     failure_types: dict[str, str],
-) -> tuple[dict[str, Any], list, dict[str, dict[str, Any]]]:
-    clean_polygons = _generate_clean_polygons(external_pline, material_pline, text_data)
-    external_elevation = _external_elevation_at_positions(external_pline, x_positions)
-    freatic_elevation = _intersection_pline_to_vline(freatic_pline[0], x_positions)
-    failure_surface_elevation = _intersection_failure_surface(
-        failure_pline, x_positions
+    small_area_scale: float,
+) -> tuple[dict[str, Any], list, dict[str, dict[str, Any]], list[dict[str, Any]]]:
+    clean_polygons, total_area = _generate_clean_polygons(
+        external_pline, material_pline, text_data, small_area_scale
+    )
+    area_summary = summarize_polygon_areas(
+        clean_polygons, small_area_scale=small_area_scale, total_area_m2=total_area
     )
     failure_surfaces = _describe_failure_surfaces(
         external_pline, failure_pline, failure_types
     )
-    columns = _generate_columns(
-        x_positions,
-        clean_polygons,
-        external_elevation,
-        freatic_elevation,
-        failure_surface_elevation,
-    )
-    return columns, clean_polygons, failure_surfaces
+    columns: dict[str, Any] = {}
+    for failure_name, positions in x_positions_by_failure.items():
+        failure_index = int(failure_name.split("_")[1]) - 1
+        external_elevation = _external_elevation_at_positions(external_pline, positions)
+        freatic_elevation = _intersection_pline_to_vline(freatic_pline[0], positions)
+        failure_surface_elevation = {
+            failure_name: _intersection_pline_to_vline(
+                failure_pline[failure_index], positions
+            )
+        }
+        generated = _generate_columns(
+            positions,
+            clean_polygons,
+            external_elevation,
+            freatic_elevation,
+            failure_surface_elevation,
+        )
+        for column_name, data in generated.items():
+            columns[f"{failure_name}_{column_name}"] = data
+    return columns, clean_polygons, failure_surfaces, area_summary
 
 
 def _intersection_pline_to_vline(pline: list, x_positions: list[float]) -> list[float]:
@@ -378,14 +555,9 @@ def _normalize_failure_types(
     for key, value in failure_types.items():
         if value is None:
             continue
-        key_text = str(key)
-        if key_text in names:
-            normalized[key_text] = str(value)
-            continue
-        if key_text.isdigit():
-            index = int(key_text) - 1
-            if 0 <= index < failure_count:
-                normalized[names[index]] = str(value)
+        failure_name = _normalize_failure_key(key, failure_count)
+        if failure_name is not None:
+            normalized[failure_name] = str(value)
     return normalized
 
 
@@ -501,6 +673,7 @@ def _generate_columns(
             del layer["top"]
         result[f"column_{index + 1}"] = {
             "layers": layers,
+            "x_position": round(float(x), ROUND_DECIMALS),
             "external_elevation": _round_optional_elevation(external_elevation[index]),
             "freatic": freatic,
             "depth_failure_surface": failure_depth,
@@ -533,6 +706,8 @@ def _intersect_column_with_layers(
                         "material": material,
                         "thickness": round(thickness, ROUND_DECIMALS),
                         "top": round(y_top, ROUND_DECIMALS),
+                        "bottom": round(y_bottom, ROUND_DECIMALS),
+                        "is_small_area": bool(polygon.get("is_small_area", False)),
                     }
                 )
     return layers
@@ -543,11 +718,101 @@ def _clean_and_deduplicate_layers(layers: list[dict[str, Any]]) -> list[dict[str
     seen = set()
     clean_layers = []
     for layer in layers:
-        key = (layer["material"], layer["top"], layer["thickness"])
+        key = (layer["material"], layer["top"], layer["bottom"], layer["is_small_area"])
         if key not in seen:
             clean_layers.append(layer)
             seen.add(key)
-    return clean_layers
+    clean_layers = _collapse_small_area_layers(clean_layers)
+    return _merge_adjacent_layers(clean_layers)
+
+
+def _collapse_small_area_layers(layers: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    if not layers:
+        return []
+    working = [dict(layer) for layer in layers]
+    result: list[dict[str, Any]] = []
+    index = 0
+    while index < len(working):
+        layer = working[index]
+        if not layer.get("is_small_area", False):
+            result.append(layer)
+            index += 1
+            continue
+
+        start = index
+        end = index
+        while end + 1 < len(working) and working[end + 1].get("is_small_area", False):
+            end += 1
+
+        block_top = working[start]["top"]
+        block_bottom = working[end]["bottom"]
+        block_center = 0.5 * (block_top + block_bottom)
+        upper = result[-1] if result else None
+        lower = _next_non_small_layer(working, end + 1)
+
+        if upper is not None and lower is not None:
+            upper["bottom"] = round(block_center, ROUND_DECIMALS)
+            upper["thickness"] = round(upper["top"] - upper["bottom"], ROUND_DECIMALS)
+            lower = dict(lower)
+            lower["top"] = round(block_center, ROUND_DECIMALS)
+            lower["thickness"] = round(lower["top"] - lower["bottom"], ROUND_DECIMALS)
+            result.append(lower)
+            index = _index_after_layer(working, end + 1)
+            continue
+
+        if upper is not None:
+            upper["bottom"] = round(block_bottom, ROUND_DECIMALS)
+            upper["thickness"] = round(upper["top"] - upper["bottom"], ROUND_DECIMALS)
+        elif lower is not None:
+            lower = dict(lower)
+            lower["top"] = round(block_top, ROUND_DECIMALS)
+            lower["thickness"] = round(lower["top"] - lower["bottom"], ROUND_DECIMALS)
+            result.append(lower)
+            index = _index_after_layer(working, end + 1)
+            continue
+        index = end + 1
+
+    return [
+        {k: v for k, v in layer.items() if k != "is_small_area"}
+        for layer in result
+        if layer["thickness"] >= MINIMUM_THICKNESS_M
+    ]
+
+
+def _next_non_small_layer(layers: list[dict[str, Any]], start_index: int) -> dict[str, Any] | None:
+    for index in range(start_index, len(layers)):
+        if not layers[index].get("is_small_area", False):
+            return layers[index]
+    return None
+
+
+def _index_after_layer(layers: list[dict[str, Any]], start_index: int) -> int:
+    for index in range(start_index, len(layers)):
+        if not layers[index].get("is_small_area", False):
+            return index + 1
+    return len(layers)
+
+
+def _merge_adjacent_layers(layers: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    if not layers:
+        return []
+    merged: list[dict[str, Any]] = []
+    for layer in layers:
+        current = dict(layer)
+        if "bottom" not in current:
+            current["bottom"] = round(current["top"] - current["thickness"], ROUND_DECIMALS)
+        if merged and merged[-1]["material"] == current["material"]:
+            merged[-1]["bottom"] = current["bottom"]
+            merged[-1]["thickness"] = round(
+                merged[-1]["top"] - merged[-1]["bottom"], ROUND_DECIMALS
+            )
+            continue
+        merged.append(current)
+    for layer in merged:
+        layer["top"] = round(layer["top"], ROUND_DECIMALS)
+        layer["thickness"] = round(layer["thickness"], ROUND_DECIMALS)
+        layer.pop("bottom", None)
+    return merged
 
 
 def _compute_column_metrics(
@@ -604,8 +869,10 @@ def _flatten_columns_by_failure(
             if depth is None or (isinstance(depth, float) and math.isnan(depth)):
                 continue
             failure_data = failure_surfaces.get(failure_name, {})
-            result[f"{section_name}-{column_name}-{failure_name}"] = {
+            x_text = _format_x_position(data.get("x_position"))
+            result[f"{section_name}-{failure_name}-x{x_text}"] = {
                 "layers": data["layers"],
+                "x_position": data.get("x_position"),
                 "external_elevation": data.get("external_elevation"),
                 "freatic": data["freatic"],
                 "failure_surface": failure_name,
@@ -614,6 +881,11 @@ def _flatten_columns_by_failure(
                 "depth_failure_surface": depth,
             }
     return result
+
+
+def _format_x_position(value: Any) -> str:
+    text = str(round(float(value), ROUND_DECIMALS)) if value is not None else "nan"
+    return text.replace("-", "m").replace(".", "p")
 
 
 def _apply_material_aliases(
@@ -629,3 +901,10 @@ def _apply_material_aliases(
             )
         aliased[column_name] = {**column, "layers": layers}
     return aliased
+
+
+def apply_material_aliases(
+    columns: dict[str, dict[str, Any]], aliases: dict[str, str]
+) -> dict[str, dict[str, Any]]:
+    """Return column definitions with layer material names replaced by aliases."""
+    return _apply_material_aliases(columns, aliases)

@@ -54,7 +54,8 @@ MRDF_PARAMETER_BOUNDS = {
     "P1": (0.0, 1.0),
     "P2": (0.05, 1.0),
     "P3": (0.5, 30.0),
-    "Dmin": (0.0, 1.0),
+    # Dmin is handled in damping-percent units after curve normalization.
+    "Dmin": (0.0, 10.0),
 }
 
 GGMAX_CALIBRATION_WEIGHTS = {

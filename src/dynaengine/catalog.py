@@ -28,6 +28,65 @@ PARAMETER_ALIASES = {
 }
 
 
+def _float_param(min_value: float | None = None, max_value: float | None = None) -> dict[str, Any]:
+    metadata: dict[str, Any] = {"type": "float"}
+    if min_value is not None:
+        metadata["min_value"] = min_value
+    if max_value is not None:
+        metadata["max_value"] = max_value
+    return metadata
+
+
+_FALLBACK_CATALOG: dict[str, Any] = {
+    "darendeli_2001": {
+        "model_parameters": {
+            "k0": _float_param(0),
+            "IP": _float_param(0),
+            "OCR": _float_param(0),
+            "frequency": _float_param(0),
+            "N": _float_param(0),
+        }
+    },
+    "menq_2003": {
+        "model_parameters": {
+            "k0": _float_param(0),
+            "Cu": _float_param(0),
+            "D50": _float_param(0),
+            "N": _float_param(0),
+        }
+    },
+    "rollins_2020": {
+        "model_parameters": {"k0": _float_param(0), "Cu": _float_param(0)}
+    },
+    "ishibashi_1993": {"model_parameters": {"IP": _float_param(0)}},
+    "wang_2021": {
+        "model_parameters": {
+            "clean_sand_and_gravel_group": {
+                "e": _float_param(0),
+                "Cu": _float_param(0),
+                "D50": _float_param(0),
+                "CF": _float_param(0),
+                "wc": _float_param(0),
+            },
+            "nonplastic_silty_sand_group": {
+                "e": _float_param(0),
+                "CF": _float_param(0),
+            },
+            "clayed_soil_group": {
+                "e": _float_param(0),
+                "OCR": _float_param(0),
+                "CF": _float_param(0),
+                "IP": _float_param(0),
+                "wc": _float_param(0),
+            },
+        }
+    },
+    "rojas_2019": {"model_parameters": {"k0": _float_param(0)}},
+    "seedidriss_1970": {"model_parameters": {"band": {"type": "text"}}},
+    "user_defined": {"model_parameters": {}},
+}
+
+
 def normalize_model_type(model_type: str) -> str:
     key = str(model_type).strip().lower()
     return MODEL_ALIASES.get(key, key)
@@ -43,6 +102,8 @@ def normalize_wang_group(group: str) -> str:
 @lru_cache(maxsize=1)
 def load_dynamic_curve_catalog(path: str | Path | None = None) -> dict[str, Any]:
     catalog_path = Path(path) if path else DEFAULT_CATALOG_PATH
+    if not catalog_path.exists():
+        return _FALLBACK_CATALOG
     with catalog_path.open("r", encoding="utf-8") as file:
         return json.load(file)
 

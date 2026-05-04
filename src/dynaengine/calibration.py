@@ -41,6 +41,7 @@ class CalibrationResult:
     theta: dict[str, float]
     mrdf: dict[str, float]
     dmin: float
+    gamma_ref: float
     strain: np.ndarray
     target_ggmax: np.ndarray
     calibrated_ggmax: np.ndarray
@@ -54,6 +55,7 @@ class CalibrationResult:
             "theta": self.theta,
             "mrdf": self.mrdf,
             "dmin": self.dmin,
+            "gamma_ref": self.gamma_ref,
             "strain": self.strain.tolist(),
             "target_ggmax": self.target_ggmax.tolist(),
             "calibrated_ggmax": self.calibrated_ggmax.tolist(),
@@ -105,6 +107,7 @@ def calibrate_dynamic_curve(
         theta={**theta, "theta_4": DEFAULT_THETA_4},
         mrdf=mrdf,
         dmin=mrdf["Dmin"],
+        gamma_ref=calibrator.gamma_ref,
         strain=strain,
         target_ggmax=ggmax,
         calibrated_ggmax=calibrator.compute_gqh_curve(theta),
@@ -168,12 +171,11 @@ class _CurveCalibrator:
         self.b = b
         self.settings = settings
 
-        half_indexes = np.where(self.ggmax <= 0.5)[0]
-        self.gamma_ref = (
-            self.strain[half_indexes[0]]
-            if len(half_indexes)
-            else np.median(self.strain)
-        )
+        # GQ/H defines gamma_ref from strength, not from the target gamma_50.
+        # The target gamma_50 is still used inside the objective as a fit metric.
+        self.gamma_ref = self.tau_max_pa / self.gmax_pa
+        if self.gamma_ref <= 0:
+            raise ValueError("gamma_ref=tau_max_pa/gmax_pa debe ser mayor a 0")
         self.ggmax_cost = _GGmaxCalibrationCost(self.strain, b)
         self.damping_cost = _DampingCalibrationCost()
 
@@ -305,17 +307,15 @@ class MRDFNoMasingRules:
         return self.p1 - self.p2 * (1 - ggmax) ** self.p3
 
     def _compute_tau_backbone(self, gamma: np.ndarray) -> np.ndarray:
-        gamma = np.atleast_1d(gamma)
-        gamma_norm = np.abs(gamma) / self.gamma_ref
-        theta_tau = self.backbone_model.compute_theta_tau(np.abs(gamma), gamma_norm)
-        return (self.tau_max_pa * 2 * gamma / self.gamma_ref) / (
-            1
-            + gamma / self.gamma_ref
-            + np.sqrt(
-                (1 + gamma / self.gamma_ref) ** 2
-                - 4 * theta_tau * gamma / self.gamma_ref
-            )
-        )
+        gamma = np.atleast_1d(gamma).astype(float)
+        sign = np.sign(gamma)
+        x = np.abs(gamma) / self.gamma_ref
+        theta_tau = self.backbone_model.compute_theta_tau(np.abs(gamma), x)
+        radicand = (1 + x) ** 2 - 4 * theta_tau * x
+        if np.any(radicand < 0):
+            raise ValueError("Raiz negativa en backbone GQ/H")
+        normalized_tau = 2 * x / (1 + x + np.sqrt(radicand))
+        return sign * self.tau_max_pa * normalized_tau
 
     def compute_damping(self, gamma: float, n_points: int = 100) -> float:
         if gamma < 1e-8:
@@ -324,6 +324,8 @@ class MRDFNoMasingRules:
         g_gamma = tau_y / gamma
         ggmax = g_gamma / self.gmax_pa
         factor = self._compute_mrdf(ggmax)
+        if factor <= 0:
+            return -MAX_FLOAT
         yc = np.linspace(-gamma, gamma, n_points)
         gamma_mid = (yc + gamma) / 2
         tau_backbone = self._compute_tau_backbone(gamma_mid)
@@ -333,7 +335,7 @@ class MRDFNoMasingRules:
             - tau_y
         )
         loop_area = abs(
-            np.trapz(np.concatenate((tc, -tc)), np.concatenate((yc, yc[::-1])))
+            np.trapz(np.concatenate((tc, -tc[::-1])), np.concatenate((yc, yc[::-1])))
         )
         elastic_energy = tau_y * gamma / 2
         if elastic_energy < MIN_FLOAT:

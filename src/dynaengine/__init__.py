@@ -22,6 +22,7 @@ from dynaengine.columns import (
 )
 from dynaengine.dxf import (
     DxfColumnExtraction,
+    apply_material_aliases,
     extract_columns_from_dxf,
     summarize_polygon_areas,
 )
@@ -37,6 +38,7 @@ from dynaengine.pipeline import (
     prepare_column_configs,
     process_column_config,
     process_dxf_folder,
+    resolve_unidentified_materials,
 )
 from dynaengine.plots import (
     plot_column_discretized_detailed,
@@ -67,6 +69,7 @@ __all__ = [
     "evaluate_dynamic_curve",
     "export_dataframe",
     "extract_columns_from_dxf",
+    "apply_material_aliases",
     "filter_columns",
     "summarize_polygon_areas",
     "plot_dxf_extraction",
@@ -78,4 +81,5 @@ __all__ = [
     "prepare_column_configs",
     "process_column_config",
     "process_dxf_folder",
+    "resolve_unidentified_materials",
 ]

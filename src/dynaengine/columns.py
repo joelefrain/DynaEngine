@@ -323,6 +323,9 @@ def calibrate_discretized_column(
     p2 = []
     p3 = []
     dmin = []
+    gamma_ref = []
+    gqh_score = []
+    mrdf_score = []
 
     for row in calibrated.itertuples(index=False):
         material = materials.require(row.material_name)
@@ -342,6 +345,9 @@ def calibrate_discretized_column(
         p2.append(result.mrdf["P2"])
         p3.append(result.mrdf["P3"])
         dmin.append(result.dmin)
+        gamma_ref.append(result.gamma_ref)
+        gqh_score.append(result.gqh_score)
+        mrdf_score.append(result.mrdf_score)
 
     calibrated["theta_1"] = theta_1
     calibrated["theta_2"] = theta_2
@@ -352,6 +358,9 @@ def calibrate_discretized_column(
     calibrated["P2"] = p2
     calibrated["P3"] = p3
     calibrated["dmin"] = dmin
+    calibrated["gqh_gamma_ref"] = gamma_ref
+    calibrated["gqh_score"] = gqh_score
+    calibrated["mrdf_score"] = mrdf_score
     return calibrated
 
 

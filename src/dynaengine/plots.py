@@ -74,8 +74,8 @@ def plot_dxf_extraction(
         x_positions: Optional list of x positions where columns are extracted
         figsize: Figure size
         highlight_small_areas: If True, mark polygons whose area is small
-            relative to the largest polygon area.
-        small_area_scale: Small-area threshold as area/largest_area.
+            relative to the total DXF section area.
+        small_area_scale: Small-area threshold as area/total_area.
         annotate_areas: If True, annotate each polygon with its area ratio.
 
     Returns:
@@ -115,13 +115,13 @@ def plot_dxf_extraction(
             if annotate_areas:
                 centroid = geometry.representative_point()
                 ratio = area_summary.get(polygon_dict.get("id"), {}).get(
-                    "area_ratio_to_largest"
+                    "area_ratio_to_total"
                 )
                 if ratio is not None:
                     axis.text(
                         centroid.x,
                         centroid.y,
-                        f"A/Amax={ratio:.3f}",
+                        f"A/Atotal={ratio:.3f}",
                         ha="center",
                         va="center",
                         fontsize=7,
