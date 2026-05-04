@@ -59,7 +59,7 @@ extraction = extract_columns_from_dxf(
 )
 ```
 
-Los campos `failure_surface`, `failure_type`, `failure_height` y `depth_failure_surface` viajan en cada columna extraida y se conservan en las tablas procesadas.
+Los campos `failure_id`, `failure_surface`, `failure_type`, `failure_height`, `x_position` y `depth_failure_surface` viajan en cada columna extraida. En las tablas raw/discretizadas/calibradas se conservan como `failure_surface_id`, `failure_surface_name` y `x_position_m`.
 
 `polygon_area_summary` y `area_notifications` reportan `polygon_id`, `area_ratio_to_total`, `bounds`, `representative_point` y `geometry_wkt`. Las areas pequenas se marcan como `small_area_omitted`; se omiten al cortar la columna y las capas superior e inferior se extienden hasta el centro del intervalo pequeno.
 

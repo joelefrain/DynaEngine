@@ -583,6 +583,7 @@ def _describe_failure_surfaces(
     for index, polyline in enumerate(failure_pline):
         name = f"failure_{index + 1}"
         result[name] = {
+            "failure_id": index + 1,
             "failure_surface": name,
             "failure_type": failure_types.get(name),
             "failure_height": _compute_failure_height(external_pline, polyline),
@@ -934,6 +935,7 @@ def _flatten_columns_by_failure(
                 "x_position": data.get("x_position"),
                 "external_elevation": data.get("external_elevation"),
                 "freatic": data["freatic"],
+                "failure_id": failure_data.get("failure_id"),
                 "failure_surface": failure_name,
                 "failure_type": failure_data.get("failure_type"),
                 "failure_height": failure_data.get("failure_height"),

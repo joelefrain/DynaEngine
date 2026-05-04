@@ -177,6 +177,7 @@ def filter_columns_with_unresolved_materials(
                 {
                     "column_name": column_name,
                     "x_position": column.get("x_position"),
+                    "failure_id": column.get("failure_id"),
                     "failure_surface": column.get("failure_surface"),
                     "unresolved_materials": column_unresolved,
                 }

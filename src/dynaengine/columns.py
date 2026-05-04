@@ -157,9 +157,11 @@ class StratigraphicColumn:
     layers: tuple[ColumnLayer, ...]
     water_table_depth_m: float | None = None
     failure_surface_depth_m: float | None = None
+    failure_surface_id: int | None = None
     failure_surface_name: str | None = None
     failure_type: str | None = None
     failure_height_m: float | None = None
+    x_position_m: float | None = None
     name: str | None = None
 
     @classmethod
@@ -172,7 +174,9 @@ class StratigraphicColumn:
         failure_surface_name = data.get(
             "failure_surface", data.get("failure_surface_name")
         )
+        failure_surface_id = data.get("failure_id", data.get("failure_surface_id"))
         failure_type = data.get("failure_type")
+        x_position = data.get("x_position", data.get("x_position_m"))
         return cls(
             layers=tuple(ColumnLayer.from_mapping(layer) for layer in data["layers"]),
             water_table_depth_m=None
@@ -181,11 +185,15 @@ class StratigraphicColumn:
             failure_surface_depth_m=None
             if data.get("depth_failure_surface") is None
             else float(data["depth_failure_surface"]),
+            failure_surface_id=None
+            if failure_surface_id is None
+            else int(failure_surface_id),
             failure_surface_name=None
             if failure_surface_name is None
             else str(failure_surface_name),
             failure_type=None if failure_type is None else str(failure_type),
             failure_height_m=None if failure_height is None else float(failure_height),
+            x_position_m=None if x_position is None else float(x_position),
             name=name or data.get("name"),
         )
 
@@ -228,6 +236,7 @@ def build_raw_column_table(
             {
                 "layer_id": index,
                 "column_name": column.name,
+                "x_position_m": column.x_position_m,
                 "material_name": material.name,
                 "top_m": top,
                 "bottom_m": bottom,
@@ -239,6 +248,7 @@ def build_raw_column_table(
                 "gmax_kpa": gmax_kpa,
                 "tau_kpa": tau_kpa,
                 "k0": material.k0,
+                "failure_surface_id": column.failure_surface_id,
                 "failure_surface_name": column.failure_surface_name,
                 "failure_type": column.failure_type,
                 "failure_height_m": column.failure_height_m,
@@ -281,6 +291,7 @@ def discretize_column(
                 {
                     "source_layer_id": raw_layer.layer_id,
                     "column_name": column.name,
+                    "x_position_m": column.x_position_m,
                     "material_name": material.name,
                     "top_m": top,
                     "bottom_m": bottom,
@@ -293,6 +304,7 @@ def discretize_column(
                     "gmax_kpa": gmax_kpa,
                     "tau_kpa": tau_kpa,
                     "k0": material.k0,
+                    "failure_surface_id": column.failure_surface_id,
                     "failure_surface_name": column.failure_surface_name,
                     "failure_type": column.failure_type,
                     "failure_height_m": column.failure_height_m,

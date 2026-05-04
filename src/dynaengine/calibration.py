@@ -340,6 +340,7 @@ class MRDFNoMasingRules:
         self.gamma_ref = backbone_model.gamma_ref
 
     def _compute_mrdf(self, ggmax: float) -> float:
+        ggmax = np.clip(ggmax, 0.0, 1.0)
         return self.p1 - self.p2 * (1 - ggmax) ** self.p3
 
     def _compute_tau_backbone(self, gamma: np.ndarray) -> np.ndarray:
